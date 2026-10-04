@@ -1,0 +1,34 @@
+{
+  "name": "pi-codemode-toggle",
+  "version": "1.0.0",
+  "description": "Toggle Pi's native Codemode tool at runtime.",
+  "type": "module",
+  "files": [
+    "index.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "codemode",
+    "coding-agent",
+    "extension"
+  ],
+  "license": "MIT",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.99.1",
+    "typescript": "^5.9.3"
+  }
+}
