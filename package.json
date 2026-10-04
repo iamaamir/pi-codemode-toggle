@@ -14,10 +14,21 @@
   "keywords": [
     "pi-package",
     "pi",
+    "pi-dev",
     "codemode",
+    "enable-codemode",
+    "disable-codemode",
+    "toggle-codemode",
+    "pi-extension",
+    "pi-coding-agent",
+    "pi-slash-command",
     "coding-agent",
-    "extension"
+    "extension",
+    "terminal",
+    "cli",
+    "tools"
   ],
+  "homepage": "https://iamaamir.github.io/pi-codemode-toggle/",
   "license": "MIT",
   "pi": {
     "extensions": [
