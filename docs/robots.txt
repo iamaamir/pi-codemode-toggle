@@ -1,0 +1,9 @@
+# pi-codemode-toggle: https://iamaamir.github.io/pi-codemode-toggle/
+# Pi extension landing page. Toggle Pi's native Codemode tool at runtime.
+
+User-agent: *
+Allow: /
+# Note: on GitHub Pages this file is served at /pi-codemode-toggle/robots.txt. Google only
+# reads /robots.txt at the host root, so this is documentation, not an active directive.
+# Submit the sitemap directly in Search Console instead.
+Sitemap: https://iamaamir.github.io/pi-codemode-toggle/sitemap.xml

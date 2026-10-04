@@ -1,0 +1,60 @@
+# pi-codemode-toggle
+
+> Toggle Pi's native Codemode tool at runtime. Install `pi-codemode-toggle`, then type
+> `/codemode` in any Pi session to turn Pi's built-in Codemode tool on or off without a restart.
+> One dependency-free TypeScript file, MIT licensed.
+
+`pi-codemode-toggle` is a [Pi](https://pi.dev) extension that registers a slash command,
+`/codemode`, for enabling, disabling, and inspecting Pi's built-in Codemode tool while a session is
+running. It works by calling Pi's `setActiveTools` API, so the change applies to the next model
+turn with no restart and no config file edits.
+
+Install: `pi install npm:pi-codemode-toggle`
+
+- Package: https://www.npmjs.com/package/pi-codemode-toggle
+- Pi package page: https://pi.dev/packages/pi-codemode-toggle
+- Landing page: https://iamaamir.github.io/pi-codemode-toggle/
+- Pi extensions: https://pi.dev/extensions
+- Pi packages gallery: https://pi.dev/packages
+
+## Commands
+
+| Command | Effect |
+| --- | --- |
+| `/codemode` | Toggle Pi's native Codemode tool on or off |
+| `/codemode on` | Enable Codemode |
+| `/codemode off` | Disable Codemode |
+| `/codemode status` | Report the current Codemode state |
+
+Argument completions are provided for `on`, `off`, `status`, and `toggle`.
+
+## How to enable codemode in Pi
+
+1. Install the extension: `pi install npm:pi-codemode-toggle`
+2. Run `/reload`, or restart Pi, so the extension loads and `/codemode` registers.
+3. In a session, type `/codemode` or `/codemode on`.
+4. The footer status indicator changes from `codemode:off` to `codemode:on`.
+
+## How to disable codemode in Pi
+
+Type `/codemode off`. The native Codemode tool is removed from the active tool set immediately and
+the indicator reads `codemode:off`.
+
+## What is Pi Codemode?
+
+Codemode is Pi's built-in mode in which the model emits a small TypeScript program that calls your
+tools, rather than issuing one tool call per step. It ships with the CLI as the `builtin:codemode`
+extension. `pi-codemode-toggle` adds runtime control over whether that tool is active.
+
+## Troubleshooting
+
+`/codemode` missing after install is almost always project trust. `pi install npm:pi-codemode-toggle -l`
+writes the declaration to the project's `.pi/settings.json`, which Pi only reads once that folder is
+trusted. Install without `-l` to add the package to `~/.pi/agent/settings.json`, or grant trust to
+the project directory. Confirm with `pi list`.
+
+## Also relevant
+
+- Pi documentation: https://pi.dev/docs/latest
+- Pi has no sub-agents by default; build your own with extensions.
+- Pi packages are bundles of extensions, skills, prompt templates, and themes published to npm or git.

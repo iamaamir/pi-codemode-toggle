@@ -1,0 +1,1254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <title>How to Enable Codemode in Pi | pi-codemode-toggle</title>
+
+    <meta
+      name="description"
+      content="How to enable codemode in Pi, the terminal coding agent. Install pi-codemode-toggle and toggle Pi's native Codemode tool on or off mid-session with /codemode. No restart, no dependencies, MIT licensed."
+    />
+
+    <meta
+      name="keywords"
+      content="how to enable codemode in pi, pi codemode, enable codemode, disable codemode, toggle codemode, pi coding agent, pi extension, pi slash command, /codemode command, builtin:codemode, pi packages, pi.dev, terminal coding agent, npm pi extension, pi status bar, runtime tool toggle, setActiveTools, pi registerCommand, codemode on, codemode off, codemode status"
+    />
+
+    <meta name="author" content="pi-codemode-toggle contributors" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="theme-color" content="#16171c" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="light dark" />
+
+    <link rel="canonical" href="https://iamaamir.github.io/pi-codemode-toggle/" />
+    <link rel="describedby" type="text/plain" href="llms.txt" title="llms.txt" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="pi-codemode-toggle" />
+    <meta property="og:title" content="pi-codemode-toggle: /codemode for Pi" />
+    <meta
+      property="og:description"
+      content="How to enable codemode in Pi: one slash command toggles the native Codemode tool at runtime. No restart, no dependencies."
+    />
+    <meta property="og:url" content="https://iamaamir.github.io/pi-codemode-toggle/" />
+    <meta property="og:image" content="https://iamaamir.github.io/pi-codemode-toggle/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Pi terminal running the /codemode command, with the codemode:on status indicator in the footer"
+    />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="pi-codemode-toggle: /codemode for Pi" />
+    <meta
+      name="twitter:description"
+      content="How to enable codemode in Pi: one slash command toggles the native Codemode tool at runtime."
+    />
+    <meta name="twitter:creator" content="@tabVsSpaceKhan" />
+    <meta name="twitter:site" content="@tabVsSpaceKhan" />
+    <meta name="twitter:image" content="https://iamaamir.github.io/pi-codemode-toggle/og.png" />
+    <meta name="twitter:image:alt" content="Pi terminal running the /codemode command" />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2316171c'/%3E%3Cpath d='M8 8h9v5h-4v11H8z' fill='%23F09082'/%3E%3Cpath d='M18 14h6v6h-6z' fill='%234D9ABF'/%3E%3C/svg%3E"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&display=swap"
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://iamaamir.github.io/pi-codemode-toggle/#app",
+            "name": "pi-codemode-toggle",
+            "alternateName": "/codemode",
+            "description": "Pi extension that toggles Pi's native Codemode tool on and off at runtime with the /codemode slash command. No restart required.",
+            "url": "https://iamaamir.github.io/pi-codemode-toggle/",
+            "sameAs": [
+              "https://pi.dev/packages/pi-codemode-toggle",
+              "https://www.npmjs.com/package/pi-codemode-toggle"
+            ],
+            "downloadUrl": "https://www.npmjs.com/package/pi-codemode-toggle",
+            "applicationCategory": "DeveloperApplication",
+            "applicationSubCategory": "AI coding agent extension",
+            "operatingSystem": "macOS, Linux, Windows (WSL)",
+            "softwareVersion": "1.0.0",
+            "datePublished": "2026-10-04",
+            "dateModified": "2026-10-04",
+            "license": "https://opensource.org/licenses/MIT",
+            "author": { "@type": "Organization", "name": "pi-codemode-toggle contributors" },
+            "programmingLanguage": "TypeScript",
+            "keywords": "pi extension, codemode, pi coding agent, slash command, pi package, builtin:codemode, toggle tool at runtime",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "featureList": [
+              "Toggle Pi's native Codemode tool with /codemode",
+              "Argument completions for on, off, status, toggle",
+              "codemode:on / codemode:off indicator, updated on command and session events",
+              "Resyncs on session_start and session_tree",
+              "No restart, no runtime dependencies"
+            ]
+          },
+          {
+            "@type": "HowTo",
+            "name": "How to enable codemode in Pi",
+            "description": "Enable Pi's native Codemode tool mid-session using the pi-codemode-toggle extension.",
+            "totalTime": "PT1M",
+            "tool": [{ "@type": "HowToTool", "name": "terminal" }],
+            "step": [
+              {
+                "@type": "HowToStep",
+                "name": "Install the extension",
+                "text": "Run pi install npm:pi-codemode-toggle"
+              },
+              {
+                "@type": "HowToStep",
+                "name": "Enable codemode",
+                "text": "Type /codemode or /codemode on in a session."
+              },
+              {
+                "@type": "HowToStep",
+                "name": "Disable it again",
+                "text": "Type /codemode off to switch it back."
+              },
+              {
+                "@type": "HowToStep",
+                "name": "Confirm in the footer",
+                "text": "The footer indicator reads codemode:on or codemode:off."
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const stored = localStorage.getItem("pi:theme");
+        const mode = stored === "light" || stored === "dark" ? stored : "system";
+        const dark =
+          mode === "system" ? matchMedia("(prefers-color-scheme: dark)").matches : mode === "dark";
+        root.dataset.theme = dark ? "dark" : "light";
+        root.dataset.themeMode = mode;
+        root.style.colorScheme = dark ? "dark" : "light";
+      })();
+    </script>
+
+    <style>
+      @layer reset, tokens, base, layout, components, a11y, motion;
+
+      /* ─────────────────────────── reset ─────────────────────────── */
+      @layer reset {
+        :where(*, ::before, ::after) { box-sizing: border-box; }
+        :where(html, body) { margin: 0; block-size: 100%; }
+        :where(h1, p, ul, li) { margin: 0; }
+        :where(ul) { padding: 0; list-style: none; }
+        :where(code, pre) { font: inherit; }
+        :where(svg) {
+          fill: none; stroke: currentColor; stroke-width: 2;
+          stroke-linecap: round; stroke-linejoin: round;
+        }
+        :where(button) { font: inherit; color: inherit; }
+      }
+
+      /* ─────────────────────────── tokens ─────────────────────────── */
+      @layer tokens {
+        :root {
+          --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+          --serif: "Newsreader", ui-serif, Georgia, serif;
+
+          /* pi.dev mark colours */
+          --coral: oklch(74% 0.12 40);
+          --blue: oklch(66% 0.1 230);
+          --amber: oklch(82% 0.13 85);
+
+          --radius: 10px;
+        }
+
+        :root,
+        :root[data-theme="dark"] {
+          color-scheme: dark;
+          --bg: oklch(17% 0.011 265);
+          --bg-2: oklch(21% 0.013 265);
+          --fg: oklch(94% 0.006 80);
+          --fg-2: oklch(76% 0.01 80);
+          --fg-3: oklch(61% 0.012 80);
+          --line: oklch(100% 0 0 / 0.11);
+          --line-2: oklch(100% 0 0 / 0.055);
+
+          /* Pi TUI colours, sampled from a real session */
+          --tui-dim: oklch(72% 0.09 300);
+          --tui-info: oklch(70% 0.11 275);
+          --tui-kw: oklch(72% 0.15 320);
+          --tui-fn: oklch(83% 0.11 200);
+          --tui-str: oklch(78% 0.16 145);
+          --tui-on: oklch(80% 0.19 145);
+
+          --accent: var(--coral);
+          --accent-2: var(--blue);
+          --glow: oklch(60% 0.18 30 / 0.3);
+          --shadow: 0 40px 90px -50px oklch(0% 0 0 / 0.95);
+        }
+
+        :root[data-theme="light"] {
+          color-scheme: light;
+          --bg: oklch(98.6% 0.005 85);
+          --bg-2: oklch(100% 0 0);
+          --fg: oklch(21% 0.012 265);
+          --fg-2: oklch(44% 0.014 265);
+          --fg-3: oklch(55% 0.012 265);
+          --line: oklch(20% 0.01 265 / 0.15);
+          --line-2: oklch(20% 0.01 265 / 0.07);
+          --tui-dim: oklch(52% 0.12 300);
+          --tui-info: oklch(48% 0.14 275);
+          --tui-kw: oklch(48% 0.17 320);
+          --tui-fn: oklch(48% 0.11 200);
+          --tui-str: oklch(46% 0.14 145);
+          --tui-on: oklch(50% 0.15 145);
+          --accent: oklch(56% 0.16 35);
+          --accent-2: oklch(50% 0.12 235);
+          --glow: oklch(75% 0.14 40 / 0.25);
+          --shadow: 0 28px 56px -42px oklch(30% 0.05 40 / 0.5);
+        }
+      }
+
+      /* ─────────────────────────── base ─────────────────────────── */
+      @layer base {
+        body {
+          min-block-size: 100dvh;
+          font-family: var(--serif);
+          color: var(--fg);
+          background: var(--bg);
+          -webkit-font-smoothing: antialiased;
+          text-rendering: optimizeLegibility;
+        }
+
+        .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; isolation: isolate; }
+
+        .bg__wash {
+          position: absolute; inset: 0;
+          background:
+            radial-gradient(110% 78% at 8% -12%, color-mix(in oklch, var(--coral) 32%, transparent), transparent 58%),
+            radial-gradient(85% 68% at 102% 106%, color-mix(in oklch, var(--blue) 28%, transparent), transparent 56%);
+        }
+
+        .bg__grid {
+          position: absolute; inset: -1px;
+          background-image:
+            linear-gradient(to right, var(--line-2) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--line-2) 1px, transparent 1px);
+          background-size: 3.5rem 3.5rem;
+          mask-image: radial-gradient(115% 100% at 50% 0%, #000 14%, transparent 74%);
+        }
+
+        /* Pointer spotlight. One element, transform + opacity only, so it stays
+           on the compositor. Deliberately faint: a hint of light, not a lamp. */
+        .bg__spot {
+          position: absolute;
+          inset-block-start: 0;
+          inset-inline-start: 0;
+          inline-size: min(620px, 92vmin);
+          block-size: min(620px, 92vmin);
+          border-radius: 50%;
+          pointer-events: none;
+          opacity: 0;
+          /* plus-lighter is additive; screen lifted body text below AA. */
+          mix-blend-mode: plus-lighter;
+          background: radial-gradient(
+            circle,
+            /* 12% is the ceiling: past this, --fg-2 body text drops under 4.5:1. */
+            color-mix(in oklch, var(--coral) 11%, transparent) 0%,
+            color-mix(in oklch, var(--amber) 5%, transparent) 42%,
+            transparent 68%
+          );
+          filter: blur(38px);
+          will-change: transform, opacity;
+          transition: opacity 0.45s ease;
+        }
+        .bg__spot[data-on] { opacity: 1; }
+
+        ::selection { background: color-mix(in oklch, var(--coral) 55%, transparent); }
+
+        :where(a) { color: inherit; }
+        a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+          outline: 2px solid var(--accent-2);
+          outline-offset: 3px;
+          border-radius: 4px;
+        }
+      }
+
+      /* ─────────────────────────── layout ─────────────────────────── */
+      @layer layout {
+        .shell {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1.06fr);
+          /* Top aligned, not centred: opening a reference section adds height
+             below the fold of that column, so nothing above it moves.
+             Centring would recentre the column and jump the page. */
+          align-items: start;
+          gap: clamp(1.4rem, 4vw, 4rem);
+          block-size: 100dvh;
+          padding: clamp(1.6rem, 7vh, 4.5rem) clamp(1.1rem, 5vw, 4rem);
+          min-inline-size: 0;
+          /* No scrollbar unless the reference section is opened on a short
+             screen. The page itself never scrolls. */
+          overflow: auto;
+          overscroll-behavior: contain;
+          scrollbar-width: thin;
+        }
+
+        @media (width < 46rem) {
+          .shell { padding-inline: clamp(1rem, 4vw, 1.5rem); }
+        }
+
+        @media (width < 60rem), (height < 34rem) {
+          .shell {
+            grid-template-columns: minmax(0, 1fr);
+            align-content: center;
+            padding-block: clamp(1.2rem, 4vh, 2.5rem);
+          }
+        }
+      }
+
+      /* ─────────────────────────── pitch ─────────────────────────── */
+      @layer components {
+        .pitch {
+          display: flex;
+          flex-direction: column;
+          min-inline-size: 0;
+          max-inline-size: 34rem;
+        }
+
+        /* Type scale and rhythm, tuned as one system.
+           Display mono, reading serif, everything else mono. */
+        .title {
+          font-family: var(--mono);
+          font-size: clamp(1.75rem, 0.85rem + 3.5vw, 2.8rem);
+          font-weight: 700;
+          line-height: 1.04;
+          letter-spacing: -0.04em;
+          text-wrap: balance;
+          margin-block-end: clamp(1rem, 2.6vh, 1.6rem);
+        }
+
+        .title em {
+          font-style: normal;
+          color: var(--accent);
+        }
+
+        .lede {
+          /* Newsreader wants looser leading and a real measure than the UI font. */
+          max-inline-size: 34ch;
+          font-family: var(--serif);
+          font-size: clamp(1.1rem, 0.98rem + 0.8vw, 1.38rem);
+          font-weight: 300;
+          font-optical-sizing: auto;
+          line-height: 1.5;
+          letter-spacing: -0.004em;
+          color: var(--fg-2);
+          text-wrap: pretty;
+          margin-block-end: clamp(1.4rem, 3.6vh, 2.2rem);
+          @media (width < 46rem) {
+            max-inline-size: 38ch;
+          }
+        }
+
+        .lede code {
+          font-family: var(--mono);
+          font-size: 0.79em;
+          font-weight: 400;
+          letter-spacing: -0.02em;
+          color: var(--fg);
+          white-space: nowrap;
+        }
+
+        /* install ---------------------------------------------------- */
+        .install {
+          display: flex;
+          align-items: stretch;
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          background: color-mix(in oklab, var(--bg-2) 94%, transparent);
+          box-shadow: 0 1px 0 oklch(100% 0 0 / 0.05) inset, var(--shadow);
+          overflow: hidden;
+          contain: layout style;
+          margin-block-end: clamp(1rem, 2.4vh, 1.5rem);
+        }
+
+        .install code {
+          display: block;
+          flex: 1 1 auto;
+          min-inline-size: 0;
+          padding: 0.85rem 1rem;
+          font-family: var(--mono);
+          font-size: clamp(0.78rem, 0.72rem + 0.28vw, 0.94rem);
+          overflow-x: auto;
+          scrollbar-width: none;
+          white-space: nowrap;
+        }
+        .install .sig { color: var(--tui-on); }
+        .install .pkg { color: var(--accent); }
+
+        /* Below 480px the command no longer fits beside the button, so let
+           it wrap. A hidden scrollbar is not an affordance. */
+        @media (width < 30rem) {
+          .install code {
+            white-space: normal;
+            overflow-wrap: anywhere;
+          }
+        }
+
+        .copy {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          flex: 0 0 auto;
+          min-block-size: 44px;
+          padding-inline: 0.95rem;
+          border: 0;
+          border-inline-start: 1px solid var(--line);
+          background: transparent;
+          color: var(--fg-3);
+          font-family: var(--mono);
+          font-size: 0.76rem;
+          cursor: pointer;
+          transition: background-color 0.18s, color 0.18s;
+        }
+        .copy:hover { background: color-mix(in oklch, var(--coral) 15%, transparent); color: var(--fg); }
+        .copy:active { background: color-mix(in oklch, var(--coral) 26%, transparent); }
+        .copy__icon { flex: 0 0 auto; }
+        .copy[data-done] {
+          color: var(--tui-on);
+          animation: confirm 0.42s cubic-bezier(0.2, 0.9, 0.25, 1);
+          transform-origin: right center;
+        }
+        .copy[data-done] .copy__icon { color: var(--tui-on); }
+
+        @keyframes confirm {
+          0% { scale: 1; }
+          38% { scale: 1.045 0.96; }
+          100% { scale: 1; }
+        }
+
+        /* The label types itself, like the rest of this page talks.
+           Fixed track width (mono font) so the button never resizes. */
+        .copy__label {
+          display: inline-flex;
+          align-items: center;
+          min-inline-size: 6ch;
+        }
+        .copy__caret {
+          block-size: 0.95em;
+          translate: 0 0.16em;
+          margin-inline-start: 0.06em;
+          opacity: 0;
+        }
+        .copy[data-typing] .copy__caret {
+          opacity: 1;
+          animation: blink 1.05s steps(1) infinite;
+        }
+      }
+
+      /* reference ------------------------------------------------------ */
+      .docs {
+        margin-block-start: clamp(0.6rem, 1.6vh, 1rem);
+        font-family: var(--mono);
+        font-size: 0.74rem;
+        border-block-start: 1px solid var(--line-2);
+        padding-block-start: clamp(0.4rem, 1vh, 0.7rem);
+      }
+
+      .docs__title {
+        font-size: 0.7rem;
+        font-weight: 400;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--fg-3);
+        margin-block-end: 0.25rem;
+      }
+
+      .docs details + details { border-block-start: 1px solid var(--line-2); }
+
+      .docs summary {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding-block: 0.34rem;
+        color: var(--fg-2);
+        cursor: pointer;
+        list-style: none;
+        border-radius: 5px;
+      }
+      .docs summary::-webkit-details-marker { display: none; }
+      .docs summary::after {
+        content: "+";
+        margin-inline-start: auto;
+        color: var(--fg-3);
+      }
+      .docs details[open] summary::after { content: "\2212"; }
+      .docs summary:hover { color: var(--fg); }
+
+      .docs p,
+      .docs ol,
+      .docs table {
+        margin-block: 0.15rem 0.6rem;
+        color: var(--fg-2);
+        line-height: 1.6;
+      }
+      /* Running answers in the reading serif: 0.74rem mono is a wall of text. */
+      .docs p {
+        font-family: var(--serif);
+        font-size: 0.95rem;
+        font-weight: 300;
+        line-height: 1.55;
+        max-inline-size: 44ch;
+      }
+      .docs p code {
+        font-size: 0.82em;
+      }
+      .docs ol { padding-inline-start: 1.1rem; list-style: decimal; }
+      .docs li + li { margin-block-start: 0.2rem; }
+      .docs code { color: var(--accent); }
+      .docs__note { color: var(--fg-3); }
+
+      .docs table { border-collapse: collapse; inline-size: 100%; }
+      .docs th,
+      .docs td {
+        text-align: start;
+        padding: 0.22rem 0.5rem 0.22rem 0;
+        border-block-end: 1px solid var(--line-2);
+        vertical-align: baseline;
+      }
+      .docs th { font-weight: 400; color: var(--fg-3); }
+      .docs td:first-child { white-space: nowrap; }
+
+      /* ───────────────────────── terminal ───────────────────────── */
+      @layer components {
+        .stage {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          align-self: stretch;
+          min-inline-size: 0;
+          min-block-size: 0;
+        }
+
+        .actions {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 0.9rem;
+          flex-wrap: wrap;
+          font-family: var(--mono);
+          font-size: 0.72rem;
+        }
+
+        .actions__hint { color: var(--fg-2); }
+        .actions__hint code {
+          color: var(--fg-3);
+          transition: color 0.25s;
+        }
+
+        .replay {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          min-block-size: 44px;
+          padding: 0.5em 1.05em;
+          border: 1px solid var(--line);
+          border-radius: 999px;
+          background: color-mix(in oklab, var(--bg-2) 70%, transparent);
+          color: var(--fg-2);
+          font-size: 0.72rem;
+          cursor: pointer;
+          animation: pop-in 0.32s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+          transition: color 0.18s, border-color 0.18s, background-color 0.18s;
+        }
+        .replay:hover {
+          color: var(--fg);
+          border-color: color-mix(in oklch, var(--coral) 55%, transparent);
+          background: color-mix(in oklch, var(--coral) 12%, transparent);
+        }
+        @keyframes pop-in {
+          from { opacity: 0; translate: 0 0.35rem; scale: 0.96; }
+        }
+
+        .term {
+          display: grid;
+          grid-template-rows: auto minmax(0, 1fr) auto;
+          block-size: auto;
+          flex: 1 1 auto;
+          max-block-size: 46rem;
+          @media (width < 46rem) {
+            /* Keep the install command above the fold on phones. */
+            block-size: min(42dvh, 19rem);
+            flex: 0 0 auto;
+          }
+          min-inline-size: 0;
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          background: color-mix(in oklab, var(--bg) 94%, transparent);
+          box-shadow:
+            0 1px 0 oklch(100% 0 0 / 0.06) inset,
+            0 0 80px -34px var(--glow),
+            var(--shadow);
+          overflow: hidden;
+          contain: layout paint style;
+          container-type: inline-size;
+          font-family: var(--mono);
+        }
+
+        .term__bar {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 0.5rem 0.9rem;
+          border-block-end: 1px solid var(--line-2);
+          background: color-mix(in oklab, var(--bg-2) 55%, transparent);
+          font-size: 0.72rem;
+          color: var(--tui-dim);
+        }
+        .term__bar b { color: var(--fg-2); font-weight: 500; }
+        .term__bar .grow { flex: 1 1 auto; }
+        .term__bar .right {
+          margin-inline-start: auto;
+          color: var(--fg-3);
+        }
+        .term__bar .right a {
+          text-decoration: none;
+          border-block-end: 1px dotted currentColor;
+        }
+        .term__bar .right a:hover { color: var(--fg); }
+
+        .term__body {
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          gap: 0.18rem;
+          padding: clamp(0.8rem, 1.8vw, 1.25rem);
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          scrollbar-width: thin;
+          scrollbar-color: var(--fg-3) transparent;
+          font-size: clamp(0.68rem, 0.58rem + 0.42cqi, 0.85rem);
+          line-height: 1.55;
+          contain: layout paint;
+        }
+
+        .ln { display: block; overflow-wrap: anywhere; }
+        .ln.in { animation: rise 0.32s cubic-bezier(0.2, 0.9, 0.25, 1) both; }
+        @keyframes rise { from { opacity: 0; translate: 0 0.4rem; } }
+
+        .blank { block-size: 0.75em; }
+
+        /* Pi surfaces user input as plain text, agent output as prose. */
+        .you { color: var(--fg); }
+        .agent { color: var(--fg-2); }
+        .notify { color: var(--tui-info); }
+
+        .rule {
+          color: var(--fg-3);
+          overflow: hidden;
+          white-space: nowrap;
+        }
+
+        /* working spinner */
+        .working {
+          display: flex;
+          align-items: baseline;
+          gap: 0.55rem;
+          color: var(--tui-fn);
+          margin-block: 0.35em;
+        }
+        .spin { display: inline-block; }
+
+        /* codemode program block, as Pi renders it */
+        .cm {
+          color: var(--tui-kw);
+          margin-block-start: 0.5em;
+          font-weight: 500;
+        }
+        .cm code { display: block; color: var(--fg); white-space: pre-wrap; }
+        .kw { color: var(--tui-kw); }
+        .fn { color: var(--tui-fn); }
+        .str { color: var(--tui-str); }
+        .op { color: var(--fg-3); }
+        .comp .hit { color: var(--accent); }
+
+        .tool {
+          color: var(--tui-on);
+          overflow-wrap: anywhere;
+        }
+        .tool .ms { color: var(--fg-3); }
+
+        .result { color: var(--fg-2); overflow-wrap: anywhere; }
+
+        /* argument completions, as Pi renders them */
+        .comp { color: var(--fg-2); }
+        .comp .arrow { color: var(--fg-3); }
+        .comp .hit { color: var(--coral); }
+
+        .caret {
+          display: inline-block;
+          inline-size: 0.48em;
+          block-size: 1.02em;
+          translate: 0 0.16em;
+          background: var(--fg-2);
+          animation: blink 1.1s steps(1) infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* once the demo finishes, stop blinking so the panel reads as settled */
+        .term[data-done] .caret { animation: none; }
+
+        /* the real Pi footer */
+        .term__foot {
+          display: flex;
+          align-items: baseline;
+          gap: 0.75rem;
+          padding: 0.5rem 0.85rem 0.6rem;
+          border-block-start: 1px solid var(--line-2);
+          background: color-mix(in oklab, var(--bg-2) 55%, transparent);
+          font-size: 0.68rem;
+          color: var(--tui-dim);
+          min-inline-size: 0;
+          white-space: nowrap;
+        }
+        /* One row, like Pi's status bar. The path yields space first,
+           the status indicator never does. */
+        .term__foot > span {
+          flex: 0 1 auto;
+          min-inline-size: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .term__foot .ctx { color: var(--fg-3); }
+        .term__foot .model,
+        .term__foot .status { flex: 0 0 auto; }
+        .status {
+          margin-inline-start: auto;
+          font-weight: 700;
+          color: var(--fg-3);
+          transition: color 0.3s;
+        }
+        .status[data-on="true"] { color: var(--tui-on); }
+
+        @container (width < 30rem) {
+          .term__foot .ctx { display: none; }
+        }
+
+        .term__foot .branch { opacity: 0.6; }
+        .term__foot .model a {
+          text-decoration: none;
+          border-block-end: 1px dotted currentColor;
+        }
+        .term__foot .model a:hover { color: var(--fg); }
+      }
+
+      /* ─────────────────────────── a11y ─────────────────────────── */
+      @layer a11y {
+        .sr-only {
+          position: absolute;
+          inline-size: 1px;
+          block-size: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+          white-space: nowrap;
+        }
+
+        @media (forced-colors: active) {
+          .term, .install { border: 1px solid CanvasText; }
+        }
+      }
+
+      /* ─────────────────────────── motion ─────────────────────────── */
+      @layer motion {
+        @media (prefers-reduced-motion: reduce) {
+          .caret, .spin, .replay, .copy[data-done] { animation: none; }
+          .ln.in { animation: none; }
+          .copy, .status, .bg__spot { transition: none; }
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="bg" aria-hidden="true">
+      <div class="bg__wash"></div>
+      <div class="bg__spot" id="spot"></div>
+      <div class="bg__grid"></div>
+    </div>
+
+    <main class="shell">
+      <!-- ── pitch ── -->
+      <section class="pitch" aria-labelledby="h1">
+        <h1 class="title" id="h1">Toggle <em>Codemode</em> in Pi.</h1>
+
+        <p class="lede">
+          Codemode lets Pi handle several tool steps together instead of one at a time. Type
+          <code>/codemode</code> to switch it on, type it again to switch it off. No restart, no
+          settings to edit.
+        </p>
+
+        <div class="install" id="install">
+          <code><span class="sig">$</span> pi install <span class="pkg">npm:pi-codemode-toggle</span></code>
+          <button
+            class="copy"
+            id="copy"
+            type="button"
+            aria-label="Copy pi install npm:pi-codemode-toggle to clipboard"
+          >
+            <svg class="copy__icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <rect x="9" y="9" width="11" height="11" rx="2.5" />
+              <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+            </svg>
+            <span class="copy__label" aria-hidden="true">
+              <span class="copy__text" id="copy-text">Copy</span>
+              <span class="caret copy__caret"></span>
+            </span>
+          </button>
+          <span class="sr-only" role="status" id="copy-status"></span>
+        </div>
+
+        <!-- Reference. Collapsed by default so the viewport stays one screen,
+             but it is real DOM: indexed, keyboard reachable, and useful. -->
+        <section class="docs" aria-labelledby="docs-h">
+          <h2 class="docs__title" id="docs-h">Reference</h2>
+
+          <details>
+            <summary>What is Pi Codemode?</summary>
+            <p>
+              Codemode is Pi's built-in mode in which the model emits a small Javascript program
+              that calls your tools, rather than issuing one tool call per step. Pi ships it as the
+              <code>builtin:codemode</code> extension; this package gives you runtime control over
+              it.
+            </p>
+          </details>
+
+          <details>
+            <summary>How to enable codemode in Pi</summary>
+            <ol>
+              <li>Install the extension: <code>pi install npm:pi-codemode-toggle</code></li>
+              <li>Type <code>/codemode</code> or <code>/codemode on</code> in a session</li>
+              <li>Type <code>/codemode off</code> to switch it back</li>
+              <li>The footer indicator reads <code>codemode:on</code> or <code>codemode:off</code></li>
+            </ol>
+          </details>
+
+          <details>
+            <summary>Commands</summary>
+            <table>
+              <caption class="sr-only">Commands accepted by /codemode</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Command</th>
+                  <th scope="col">Effect</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>/codemode</code></td><td>Toggle Codemode on or off</td></tr>
+                <tr><td><code>/codemode on</code></td><td>Enable Codemode</td></tr>
+                <tr><td><code>/codemode off</code></td><td>Disable Codemode</td></tr>
+                <tr><td><code>/codemode status</code></td><td>Report the current state</td></tr>
+              </tbody>
+            </table>
+            <p class="docs__note">
+              Argument completions are provided for <code>on</code>, <code>off</code>,
+              <code>status</code> and <code>toggle</code>.
+            </p>
+          </details>
+
+          <details>
+            <summary>Troubleshooting</summary>
+            <p>
+              <code>/codemode</code> missing after install is almost always project trust.
+              <code>pi install npm:pi-codemode-toggle -l</code> writes the declaration to the
+              project's <code>.pi/settings.json</code>, which Pi only reads once that folder is
+              trusted. Install without <code>-l</code> to add the package to
+              <code>~/.pi/agent/settings.json</code>, or grant trust to the directory. Confirm with
+              <code>pi list</code>.
+            </p>
+          </details>
+        </section>
+
+      </section>
+
+      <!-- ── terminal ── -->
+      <section class="stage" aria-labelledby="demo-h">
+        <h2 class="sr-only" id="demo-h">Demo: the /codemode command inside a Pi session</h2>
+
+        <div class="term">
+
+        <div class="term__bar">
+          <b>pi</b>
+          <span class="right">
+            <a href="https://pi.dev/packages/pi-codemode-toggle" rel="noopener" target="_blank"
+              >pi-codemode-toggle</a
+            >
+          </span>
+        </div>
+
+        <div class="term__body" id="body" tabindex="0" aria-label="Pi session transcript">
+          <!-- Filled by script. Static transcript below is the no-JS fallback. -->
+          <noscript>
+            <p class="ln notify">Codemode is enabled</p>
+            <p class="ln you">/codemode on</p>
+            <p class="ln agent">Read package.json and README.md in parallel.</p>
+            <p class="ln cm">
+              codemode
+              <code>const [pkg, readme] = await Promise.all([...]);</code>
+            </p>
+            <p class="ln tool">✓ read {"path":"package.json"} 3ms</p>
+            <p class="ln you">/codemode off</p>
+            <p class="ln notify">Codemode is disabled</p>
+          </noscript>
+        </div>
+
+        <div class="term__foot">
+          <span class="path">~/git/pi-codemode-toggle <span class="branch">(main)</span></span>
+          <span class="ctx">0.8%/1.0M</span>
+          <span class="model"><a href="https://iamaamir.github.io/pi-bifrost/" rel="noopener">pi-bifrost/auto</a> • medium</span>
+          <span class="status" id="status" data-on="false">codemode:off</span>
+        </div>
+        </div>
+
+        <p class="actions">
+          <button class="replay" id="replay" type="button" aria-controls="body">
+            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+              <path d="M20 12a8 8 0 1 1-2.6-5.9" />
+              <path d="M20 4v4h-4" />
+            </svg>
+            <span id="replay-text">Skip demo</span>
+          </button>
+          <span class="actions__hint">
+            args: <code>on</code> <code>off</code> <code>status</code> <code>toggle</code>
+          </span>
+        </p>
+      </section>
+    </main>
+
+    <script>
+      /* ═════════════════════ copy button ═════════════════════ */
+      const INSTALL = "pi install npm:pi-codemode-toggle";
+      const copyBtn = document.getElementById("copy");
+      const copyStatus = document.getElementById("copy-status");
+
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+      /* ── the button types its own label ── */
+      const copyText = document.getElementById("copy-text");
+      const IDLE = "Copy";
+      const DONE = "Copied";
+      let typingToken = 0;
+
+      const calmMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+      async function typeLabel(next, token) {
+        // Reduced motion: swap the word outright, skip the theatre.
+        if (calmMotion.matches) {
+          copyText.textContent = next;
+          return true;
+        }
+        copyBtn.dataset.typing = "";
+        while (copyText.textContent.length) {
+          if (token !== typingToken) return false;
+          copyText.textContent = copyText.textContent.slice(0, -1);
+          await sleep(36);
+        }
+        for (const ch of next) {
+          if (token !== typingToken) return false;
+          copyText.textContent += ch;
+          await sleep(50);
+        }
+        if (token === typingToken) delete copyBtn.dataset.typing;
+        return token === typingToken;
+      }
+
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(INSTALL);
+        } catch {
+          const t = document.createElement("textarea");
+          t.value = INSTALL;
+          t.setAttribute("readonly", "");
+          t.style.cssText = "position:fixed;opacity:0;pointer-events:none";
+          document.body.append(t);
+          t.select();
+          document.execCommand("copy");
+          t.remove();
+        }
+
+        copyStatus.textContent = "Install command copied to clipboard.";
+        const token = ++typingToken;
+        // Green and the little squash land only once the word is fully typed.
+        if (await typeLabel(DONE, token)) copyBtn.dataset.done = "";
+
+        await sleep(1600);
+        if (token !== typingToken) return;
+        delete copyBtn.dataset.done;
+        await typeLabel(IDLE, token);
+      });
+
+      /* ═════════════════════ pointer-tracking glow ═════════════════════ */
+      /* Transform-only, rAF-coalesced, and skipped entirely for reduced
+         motion or coarse pointers. */
+      const finePointer = matchMedia("(pointer: fine)");
+      const motionOK = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const spot = document.getElementById("spot");
+
+      if (motionOK && finePointer.matches) {
+        let x = innerWidth / 2;
+        let y = innerHeight / 2;
+        let tx = x;
+        let ty = y;
+        let frame = 0;
+
+        const place = () => {
+          const half = spot.offsetWidth / 2;
+          spot.style.transform = `translate3d(${x - half}px, ${y - half}px, 0)`;
+        };
+
+        const step = () => {
+          x += (tx - x) * 0.18;
+          y += (ty - y) * 0.18;
+          place();
+
+          const settled = Math.abs(tx - x) < 0.4 && Math.abs(ty - y) < 0.4;
+          frame = settled ? 0 : requestAnimationFrame(step);
+        };
+
+        const aim = (event) => {
+          tx = event.clientX;
+          ty = event.clientY;
+          spot.dataset.on = "";
+          if (!frame) frame = requestAnimationFrame(step);
+        };
+
+        addEventListener("pointermove", aim, { passive: true });
+        addEventListener("pointerdown", aim, { passive: true });
+
+        // Fade out when the pointer leaves the window, so the page
+        // settles back to its resting look.
+        document.addEventListener("pointerleave", () => delete spot.dataset.on);
+        addEventListener("blur", () => delete spot.dataset.on);
+
+        addEventListener("resize", place, { passive: true });
+        place();
+      }
+
+      /* ═════════════════════ Pi session demo ═════════════════════ */
+      const termBody = document.getElementById("body");
+      const term = document.querySelector(".term");
+      const statusEl = document.getElementById("status");
+      const replay = document.getElementById("replay");
+      const replayText = document.getElementById("replay-text");
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+
+      const beat = (min, max) => min + Math.random() * (max - min);
+      const SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
+
+      /* Every pause in the demo funnels through pause(), so one skip flag
+         fast-forwards the whole run. No threading a token through 16 awaits. */
+      let skipNow = null;
+      let skipped = false;
+
+      const pause = (ms) =>
+        new Promise((resolve) => {
+          const timer = setTimeout(done, ms);
+          skipNow = done;
+          function done() {
+            clearTimeout(timer);
+            skipNow = null;
+            resolve();
+          }
+        });
+
+      function add(cls, html) {
+        const el = document.createElement("p");
+        el.className = `ln in ${cls}`.trim();
+        if (html) el.innerHTML = html;
+        termBody.append(el);
+        while (termBody.childElementCount > 26) termBody.firstElementChild.remove();
+        termBody.scrollTop = termBody.scrollHeight;
+        return el;
+      }
+
+      const blank = () => add("blank", "&nbsp;");
+
+      /* Rule width tracks the panel instead of a hardcoded character count. */
+      const rule = () => {
+        const ch = parseFloat(getComputedStyle(termBody).fontSize) * 0.6 || 8;
+        add("rule", "─".repeat(Math.max(20, Math.floor(termBody.clientWidth / ch))));
+      };
+
+      function setStatus(on) {
+        statusEl.dataset.on = String(on);
+        statusEl.textContent = on ? "codemode:on" : "codemode:off";
+      }
+
+      async function working(label, ms) {
+        const el = add("working", "");
+        const spin = document.createElement("span");
+        spin.className = "spin";
+        const text = document.createElement("span");
+        text.textContent = label;
+        el.append(spin, text);
+        const end = performance.now() + ms;
+        let frame = 0;
+        while (performance.now() < end && !reduced.matches && !skipped) {
+          spin.textContent = SPINNER[frame++ % SPINNER.length];
+          await pause(85);
+        }
+        spin.textContent = "✓";
+        el.remove();
+        termBody.scrollTop = termBody.scrollHeight;
+      }
+
+      /** Type like a person: per-character jitter, longer pause on spaces. */
+      async function type(text, { tail } = {}) {
+        const el = add("you", "");
+        const out = document.createElement("span");
+        const caret = document.createElement("span");
+        caret.className = "caret";
+        el.append(out);
+
+        for (const ch of text) {
+          out.append(document.createTextNode(ch));
+          el.append(caret);
+          termBody.scrollTop = termBody.scrollHeight;
+          await pause(ch === " " ? beat(45, 110) : beat(20, 70));
+        }
+
+        caret.remove();
+        let tailEls = [];
+        if (tail) {
+          tailEls = tail.lines.map((html) => add(tail.cls, html));
+          termBody.scrollTop = termBody.scrollHeight;
+        }
+        return { el, tailEls };
+      }
+
+      const PROGRAM = `
+const <span class="kw">[</span>pkg, readme<span class="kw">]</span> <span class="op">=</span> <span class="kw">await</span> <span class="fn">Promise.all</span><span class="op">([</span>
+  tools.<span class="fn">read</span><span class="op">({</span> path<span class="op">:</span> <span class="str">"package.json"</span> <span class="op">}),</span>
+  tools.<span class="fn">read</span><span class="op">({</span> path<span class="op">:</span> <span class="str">"README.md"</span> <span class="op">}),</span>
+<span class="op">]);</span>`;
+
+      async function session() {
+        term.removeAttribute("data-done");
+        await pause(700);
+
+        // 1. enable codemode, with argument completions appearing as you type
+        const first = await type("/codemode o", {
+          tail: {
+            cls: "comp",
+            lines: ['<span class="arrow">→</span> <span class="hit">on</span>', "off"],
+          },
+        });
+        await pause(beat(900, 1300));
+        // Enter commits the completion: the list disappears, input is resolved.
+        first.tailEls.forEach((n) => n.remove());
+        first.el.textContent = "/codemode on";
+        await pause(beat(450, 700));
+
+        setStatus(true);
+        add("notify", "Codemode is enabled");
+        blank();
+        await pause(beat(600, 900));
+
+        // 2. ask for something that only works with codemode on
+        await type("read package.json and README.md in parallel");
+        await pause(beat(600, 900));
+        rule();
+        await working("Working", beat(1800, 2400));
+
+        add("agent", "I'll read both files in parallel using codemode.");
+        await pause(beat(600, 900));
+        add("cm", `codemode<code>${PROGRAM}</code>`);
+        await pause(beat(700, 1100));
+        add("tool", '✓ read {"path":"package.json"} <span class="ms">3ms</span>');
+        await pause(beat(400, 620));
+        add("tool", '✓ read {"path":"README.md"} <span class="ms">2ms</span>');
+        await pause(beat(500, 800));
+        add("result", '{"name":"pi-codemode-toggle","heading":"# pi-codemode-toggle"}');
+        blank();
+        await pause(beat(700, 1000));
+
+        // 3. turn it back off
+        await type("/codemode off");
+        await pause(beat(600, 900));
+        setStatus(false);
+        add("notify", "Codemode is disabled");
+
+        // Settle, then hand control back to the reader.
+        await pause(beat(900, 1200));
+      }
+
+      let running = false;
+
+      async function play() {
+        if (running || reduced.matches) return;
+        running = true;
+        skipped = false;
+        replayText.textContent = "Skip demo";
+        try {
+          termBody.replaceChildren();
+          await session();
+        } catch (err) {
+          // Never strand the reader with a dead panel and no control.
+          console.error(err);
+        } finally {
+          running = false;
+        }
+        term.dataset.done = "";
+        replayText.textContent = "Replay demo";
+      }
+
+      function staticTranscript() {
+        // Same order the animated run produces: command first, then its result.
+        add("you", "/codemode on");
+        add("notify", "Codemode is enabled");
+        add("cm", `codemode<code>${PROGRAM}</code>`);
+        add("tool", '✓ read {"path":"package.json"} <span class="ms">3ms</span>');
+        add("tool", '✓ read {"path":"README.md"} <span class="ms">2ms</span>');
+        add("result", '{"name":"pi-codemode-toggle"}');
+        add("you", "/codemode off");
+        add("notify", "Codemode is disabled");
+        term.dataset.done = "";
+        replayText.textContent = "Replay demo";
+      }
+
+      // One control for both jobs: skip while it runs, replay once it has.
+      replay.addEventListener("click", () => {
+        if (running) {
+          skipped = true;
+          if (skipNow) skipNow();
+          return;
+        }
+        play();
+      });
+
+      addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && running) replay.click();
+      });
+
+      if (reduced.matches) staticTranscript();
+      else play();
+    </script>
+  </body>
+</html>
