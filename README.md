@@ -32,14 +32,14 @@ This extension calls `setActiveTools` at runtime, so the change applies to the v
 
 Other Pi extensions by the same author:
 
-- **[pi-bifrost](https://github.com/iamaamir/pi-bifrost)** — configuration-first model router. Routes each prompt to a model
+- **[pi-bifrost](https://iamaamir.github.io/pi-bifrost/)** — configuration-first model router. Routes each prompt to a model
   by task tier, cost, speed, or context length.
 
   ```bash
   pi install npm:pi-bifrost
   ```
 
-- **[system-one](https://github.com/iamaamir/system-one/tree/pi-system-one)** — provider-neutral System One runtime for TypeScript
+- **[system-one](https://iamaamir.github.io/system-one/pi/)** — provider-neutral System One runtime for TypeScript
   and Pi. Calibrated `choice`, `noul`, and `score` decisions via Jev, Reflex, or your own provider.
 
   ```bash
