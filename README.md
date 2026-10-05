@@ -14,6 +14,13 @@ pi install npm:pi-codemode-toggle
 /codemode status
 ```
 
+
+
+https://github.com/user-attachments/assets/b4861e7c-d3ed-4bdc-a663-2461c196fb5a
+
+
+
+
 ## Why
 
 Pi ships a native Codemode tool (`builtin:codemode`) that lets the model emit a small Javascript
