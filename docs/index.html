@@ -8,7 +8,7 @@
 
     <meta
       name="description"
-      content="How to enable codemode in Pi, the terminal coding agent. Install pi-codemode-toggle and toggle Pi's native Codemode tool on or off mid-session with /codemode. No restart, no dependencies, MIT licensed."
+      content="Enable Pi Codemode at runtime with /codemode. pi-codemode-toggle requires Pi 0.99.0+ and toggles native Codemode without settings edits or restarts."
     />
 
     <meta
@@ -30,7 +30,7 @@
     <meta property="og:title" content="pi-codemode-toggle: /codemode for Pi" />
     <meta
       property="og:description"
-      content="How to enable codemode in Pi: one slash command toggles the native Codemode tool at runtime. No restart, no dependencies."
+      content="Toggle Pi's native Codemode at runtime with /codemode. Requires Pi 0.99.0+. No settings edits or restart when toggling."
     />
     <meta property="og:url" content="https://iamaamir.github.io/pi-codemode-toggle/" />
     <meta property="og:image" content="https://iamaamir.github.io/pi-codemode-toggle/og.png" />
@@ -47,7 +47,7 @@
     <meta name="twitter:title" content="pi-codemode-toggle: /codemode for Pi" />
     <meta
       name="twitter:description"
-      content="How to enable codemode in Pi: one slash command toggles the native Codemode tool at runtime."
+      content="Toggle Pi's native Codemode at runtime with /codemode. Requires Pi 0.99.0+."
     />
     <meta name="twitter:creator" content="@tabVsSpaceKhan" />
     <meta name="twitter:site" content="@tabVsSpaceKhan" />
@@ -75,19 +75,22 @@
             "@id": "https://iamaamir.github.io/pi-codemode-toggle/#app",
             "name": "pi-codemode-toggle",
             "alternateName": "/codemode",
-            "description": "Pi extension that toggles Pi's native Codemode tool on and off at runtime with the /codemode slash command. No restart required.",
+            "description": "Pi extension that toggles Pi's native Codemode tool on and off at runtime with the /codemode slash command. Requires Pi 0.99.0+. Once loaded, toggling requires no restart or settings edits.",
             "url": "https://iamaamir.github.io/pi-codemode-toggle/",
             "sameAs": [
               "https://pi.dev/packages/pi-codemode-toggle",
-              "https://www.npmjs.com/package/pi-codemode-toggle"
+              "https://www.npmjs.com/package/pi-codemode-toggle",
+              "https://github.com/iamaamir/pi-codemode-toggle"
             ],
+            "codeRepository": "https://github.com/iamaamir/pi-codemode-toggle",
             "downloadUrl": "https://www.npmjs.com/package/pi-codemode-toggle",
             "applicationCategory": "DeveloperApplication",
             "applicationSubCategory": "AI coding agent extension",
             "operatingSystem": "macOS, Linux, Windows (WSL)",
             "softwareVersion": "1.0.0",
+            "softwareRequirements": "Pi >= 0.99.0",
             "datePublished": "2026-10-04",
-            "dateModified": "2026-10-04",
+            "dateModified": "2026-10-05",
             "license": "https://opensource.org/licenses/MIT",
             "author": { "@type": "Organization", "name": "pi-codemode-toggle contributors" },
             "programmingLanguage": "TypeScript",
@@ -98,20 +101,20 @@
               "Argument completions for on, off, status, toggle",
               "codemode:on / codemode:off indicator, updated on command and session events",
               "Resyncs on session_start and session_tree",
-              "No restart, no runtime dependencies"
+              "No restart or settings edits when toggling; no runtime dependencies"
             ]
           },
           {
             "@type": "HowTo",
             "name": "How to enable codemode in Pi",
-            "description": "Enable Pi's native Codemode tool mid-session using the pi-codemode-toggle extension.",
+            "description": "Enable Pi's native Codemode tool at runtime using pi-codemode-toggle. Requires Pi 0.99.0 or newer.",
             "totalTime": "PT1M",
             "tool": [{ "@type": "HowToTool", "name": "terminal" }],
             "step": [
               {
                 "@type": "HowToStep",
                 "name": "Install the extension",
-                "text": "Run pi install npm:pi-codemode-toggle"
+                "text": "Requires Pi 0.99.0 or newer. Run pi install npm:pi-codemode-toggle. If Pi is already running, run /reload once to load the newly installed extension."
               },
               {
                 "@type": "HowToStep",
@@ -623,15 +626,15 @@
         }
         .term__bar b { color: var(--fg-2); font-weight: 500; }
         .term__bar .grow { flex: 1 1 auto; }
-        .term__bar .right {
+        .term__bar .right{
           margin-inline-start: auto;
-          color: var(--fg-3);
         }
-        .term__bar .right a {
+        .term__bar a {
           text-decoration: none;
           border-block-end: 1px dotted currentColor;
+          color: var(--fg-3);
         }
-        .term__bar .right a:hover { color: var(--fg); }
+        .term__bar a:hover { color: var(--fg); }
 
         .term__body {
           display: flex;
@@ -751,11 +754,11 @@
         }
 
         .term__foot .branch { opacity: 0.6; }
-        .term__foot .model a {
+        .term__foot .model a , .term__foot .path a{
           text-decoration: none;
           border-block-end: 1px dotted currentColor;
         }
-        .term__foot .model a:hover { color: var(--fg); }
+        .term__foot .model a:hover, .term__foot .path a:hover { color: var(--fg); }
       }
 
       /* ─────────────────────────── a11y ─────────────────────────── */
@@ -802,8 +805,8 @@
 
         <p class="lede">
           Codemode lets Pi handle several tool steps together instead of one at a time. Type
-          <code>/codemode</code> to switch it on, type it again to switch it off. No restart, no
-          settings to edit.
+          <code>/codemode</code> to switch it on or off at runtime. Requires Pi 0.99.0+. Once this
+          extension is loaded, no restart or settings edits are needed.
         </p>
 
         <div class="install" id="install">
@@ -834,7 +837,7 @@
           <details>
             <summary>What is Pi Codemode?</summary>
             <p>
-              Codemode is Pi's built-in mode in which the model emits a small Javascript program
+              Codemode is Pi's built-in mode in which the model emits a small JavaScript program
               that calls your tools, rather than issuing one tool call per step. Pi ships it as the
               <code>builtin:codemode</code> extension; this package gives you runtime control over
               it.
@@ -844,7 +847,9 @@
           <details>
             <summary>How to enable codemode in Pi</summary>
             <ol>
+              <li>Use Pi <code>0.99.0</code> or newer</li>
               <li>Install the extension: <code>pi install npm:pi-codemode-toggle</code></li>
+              <li>If Pi is already running, run <code>/reload</code> once after installation</li>
               <li>Type <code>/codemode</code> or <code>/codemode on</code> in a session</li>
               <li>Type <code>/codemode off</code> to switch it back</li>
               <li>The footer indicator reads <code>codemode:on</code> or <code>codemode:off</code></li>
@@ -877,7 +882,9 @@
           <details>
             <summary>Troubleshooting</summary>
             <p>
-              <code>/codemode</code> missing after install is almost always project trust.
+              If <code>/codemode</code> is missing, first confirm you are using Pi
+              <code>0.99.0</code> or newer. If you installed while Pi was already running, run
+              <code>/reload</code> once. For project-local installs,
               <code>pi install npm:pi-codemode-toggle -l</code> writes the declaration to the
               project's <code>.pi/settings.json</code>, which Pi only reads once that folder is
               trusted. Install without <code>-l</code> to add the package to
@@ -896,10 +903,15 @@
         <div class="term">
 
         <div class="term__bar">
-          <b>pi</b>
+            <span class="left">
+              <a href="https://pi.dev/packages/pi-codemode-toggle" rel="noopener" target="_blank"
+                >Pi</a
+              >
+            </span>
+
           <span class="right">
-            <a href="https://pi.dev/packages/pi-codemode-toggle" rel="noopener" target="_blank"
-              >pi-codemode-toggle</a
+            <a href="https://github.com/iamaamir/pi-codemode-toggle" rel="noopener" target="_blank"
+              >github/pi-codemode-toggle</a
             >
           </span>
         </div>
@@ -921,7 +933,7 @@
         </div>
 
         <div class="term__foot">
-          <span class="path">~/git/pi-codemode-toggle <span class="branch">(main)</span></span>
+          <span class="path"><a href="https://github.com/iamaamir/pi-codemode-toggle" rel="noopener">~/git/pi-codemode-toggle</a> <span class="branch">(main)</span></span>
           <span class="ctx">0.8%/1.0M</span>
           <span class="model"><a href="https://iamaamir.github.io/pi-bifrost/" rel="noopener">pi-bifrost/auto</a> • medium</span>
           <span class="status" id="status" data-on="false">codemode:off</span>
@@ -1253,3 +1265,4 @@ const <span class="kw">[</span>pkg, readme<span class="kw">]</span> <span class=
     </script>
   </body>
 </html>
+
