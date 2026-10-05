@@ -28,6 +28,24 @@ program instead of one tool call per step.
 Enabling or disabling it previously meant editing config and restarting the session.
 This extension calls `setActiveTools` at runtime, so the change applies to the very next model turn.
 
+## Related work
+
+Other Pi extensions by the same author:
+
+- **[pi-bifrost](https://github.com/iamaamir/pi-bifrost)** — configuration-first model router. Routes each prompt to a model
+  by task tier, cost, speed, or context length.
+
+  ```bash
+  pi install npm:pi-bifrost
+  ```
+
+- **[system-one](https://github.com/iamaamir/system-one/tree/pi-system-one)** — provider-neutral System One runtime for TypeScript
+  and Pi. Calibrated `choice`, `noul`, and `score` decisions via Jev, Reflex, or your own provider.
+
+  ```bash
+  pi install npm:pi-system-one
+  ```
+
 ## License
 
 [MIT](./LICENSE)
