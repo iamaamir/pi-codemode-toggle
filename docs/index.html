@@ -248,13 +248,16 @@
             radial-gradient(85% 68% at 102% 106%, color-mix(in oklch, var(--blue) 28%, transparent), transparent 56%);
         }
 
-        .bg__grid {
-          position: absolute; inset: -1px;
-          background-image:
-            linear-gradient(to right, var(--line-2) 1px, transparent 1px),
-            linear-gradient(to bottom, var(--line-2) 1px, transparent 1px);
-          background-size: 3.5rem 3.5rem;
-          mask-image: radial-gradient(115% 100% at 50% 0%, #000 14%, transparent 74%);
+        /* Aperiodic Einstein tile field. The geometry is drawn on a canvas
+           rather than with repeating background-images, because an Einstein
+           tiling by definition never repeats — there is no period to tile a
+           background-image with. */
+        .bg__tiles {
+          position: absolute;
+          inset: 0;
+          inline-size: 100%;
+          block-size: 100%;
+          pointer-events: none;
         }
 
         /* Pointer spotlight. One element, transform + opacity only, so it stays
@@ -794,8 +797,8 @@
   <body>
     <div class="bg" aria-hidden="true">
       <div class="bg__wash"></div>
+      <canvas class="bg__tiles"></canvas>
       <div class="bg__spot" id="spot"></div>
-      <div class="bg__grid"></div>
     </div>
 
     <main class="shell">
@@ -1064,6 +1067,299 @@
         place();
       }
 
+      /* ═════════════════════ Einstein tile field ═════════════════════ */
+      /* Aperiodic hat tiling (Katz–Steinhardt). Every unit square is split
+         by a diagonal; a "hat" is two triangles joined across a horizontal
+         cell edge; and no two hats may share a grid vertex. That last rule
+         is what guarantees the pattern never repeats.
+
+         Geometry compiles once per resize into two cached Path2D objects.
+         The wipe is then just a handful of draw calls per frame — no
+         per-tile work, no allocation, nothing rebuilt at 60fps. */
+      const tileCv = document.querySelector(".bg__tiles");
+      const tctx = tileCv.getContext("2d");
+      const calm = matchMedia("(prefers-reduced-motion: reduce)");
+
+      const TILE_CELL = 64;       // big enough that the hat geometry actually reads
+      const TILE_SEED = 1337;      // fixed: the pattern must not reshuffle on reload
+      const TILE_DENSITY = 0.24;   // hats are the signature; let them dominate
+      const TILE_BAND = 0.3;       // wipe half-width, as a fraction of the axis
+      // The tiling is legible at rest; the wipe is a highlight travelling over
+      // it, not the only source of contrast in the frame.
+      const TILE_STROKE_FLOOR = 0.42;
+      const TILE_STROKE_PEAK = [0.7, 0.88];   // [codemode off, on]
+      const TILE_FILL_FLOOR = 0.045;
+      const TILE_FILL_PEAK = [0.08, 0.13];    // [codemode off, on]
+      const TILE_SPEED = [0.3, 0.66];        // cycles/sec, [codemode off, on]
+
+      // Alpha that reads as "faint texture" on a near-black background reads as
+      // several times stronger on near-white. The field is scaled down hard in
+      // light mode so the lede and the Reference list keep their contrast.
+      const TILE_K = document.documentElement.dataset.theme === "light" ? 0.3 : 1;
+
+      /* Seeded PRNG, so the field is identical on every load and in both
+         themes. Math.random() would make the page move on every reload. */
+      function mulberry32(a) {
+        return function () {
+          a |= 0; a = (a + 0x6d2b79f5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      /* Grid vertices packed into one int, for the no-shared-vertex rule. */
+      const vkey = (x, y) => ((y & 1023) << 11) | (x & 2047);
+
+      function buildHats(cols, rows, density, seed) {
+        const owner = new Int32Array(cols * rows).fill(-1);
+        const used = new Set();
+        const hats = [];
+        const rnd = mulberry32(seed);
+
+        for (let j = 0; j < rows; j++) {
+          for (let i = 0; i < cols; i++) {
+            if (rnd() > density) continue;
+            const down = rnd() < 0.5;            // which way this hat leans
+            const i2 = down ? (i + 1) % cols : (i - 1 + cols) % cols;
+            const a = j * cols + i;
+            const b = j * cols + i2;
+            if (owner[a] !== -1 || owner[b] !== -1) continue;
+
+            const verts = down
+              ? [vkey(i, j), vkey(i + 1, j + 1), vkey(i + 1, j + 2), vkey(i, j + 1)]
+              : [vkey(i, j - 1), vkey(i + 1, j), vkey(i + 1, j + 1), vkey(i, j)];
+
+            let clash = false;
+            for (const v of verts) {
+              if (used.has(v)) { clash = true; break; }
+            }
+            if (clash) continue;
+            for (const v of verts) used.add(v);
+
+            owner[a] = hats.length;
+            owner[b] = hats.length;
+            hats.push({ i, j, down });
+          }
+        }
+
+        // Everything a hat did not claim becomes a plain triangle, split by
+        // the same diagonal, alternating on (i+j) parity.
+        const tris = [];
+        for (let j = 0; j < rows; j++) {
+          for (let i = 0; i < cols; i++) {
+            if (owner[j * cols + i] === -1) tris.push({ i, j, up: ((i + j) & 1) === 0 });
+          }
+        }
+        return { hats, tris };
+      }
+
+      let hatPath = null;
+      let triPath = null;
+      let tilesW = 0;
+      let tilesH = 0;
+      let tileRGB = { hat: "240,144,130", fg: "242,236,224" };
+
+      /* Resolve a design token to "r,g,b" in two steps, because neither one alone
+         works: getComputedStyle hands back the token's colour function
+         unresolved (this page's tokens are oklch(), and Chrome preserves that
+         rather than converting to rgb), while canvas fillStyle does not
+         understand var() at all. So resolve the variable to a colour string
+         first, then let the canvas parse oklch() and rasterise it to sRGB.
+         Browsers without oklch() support reject it and we fall back. */
+      function resolveRGB(cssValue, fallback) {
+        const probe = document.createElement("span");
+        probe.style.display = "none";
+        probe.style.color = cssValue;
+        document.body.append(probe);
+        const resolved = getComputedStyle(probe).color;
+        probe.remove();
+
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = 1;
+        const pctx = cv.getContext("2d", { willReadFrequently: true });
+        pctx.fillStyle = "#123456";            // sentinel
+        pctx.fillStyle = resolved;
+        if (pctx.fillStyle === "#123456") return fallback;   // rejected
+        pctx.fillRect(0, 0, 1, 1);
+        const d = pctx.getImageData(0, 0, 1, 1).data;
+        return `${d[0]},${d[1]},${d[2]}`;
+      }
+
+      const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+      function buildTilePaths(w, h) {
+        // 2 cells of bleed past every edge, so the wrap seam is never visible.
+        const cols = Math.ceil(w / TILE_CELL) + 4;
+        const rows = Math.ceil(h / TILE_CELL) + 4;
+        const ox = -TILE_CELL * 2;
+        const oy = -TILE_CELL * 2;
+        const px = (i) => ox + i * TILE_CELL;
+        const py = (j) => oy + j * TILE_CELL;
+        const { hats, tris } = buildHats(cols, rows, TILE_DENSITY, TILE_SEED);
+
+        const hat = new Path2D();
+        const tri = new Path2D();
+
+        for (const t of hats) {
+          const p = t.down
+            ? [[t.i, t.j], [t.i + 1, t.j + 1], [t.i + 1, t.j + 2], [t.i, t.j + 1]]
+            : [[t.i, t.j - 1], [t.i + 1, t.j], [t.i + 1, t.j + 1], [t.i, t.j]];
+          p.forEach(([x, y], k) => (k ? hat.lineTo(px(x), py(y)) : hat.moveTo(px(x), py(y))));
+          hat.closePath();
+        }
+
+        for (const t of tris) {
+          const p = t.up
+            ? [[t.i, t.j], [t.i + 1, t.j + 1], [t.i, t.j + 1]]
+            : [[t.i, t.j], [t.i + 1, t.j], [t.i + 1, t.j + 1]];
+          p.forEach(([x, y], k) => (k ? tri.lineTo(px(x), py(y)) : tri.moveTo(px(x), py(y))));
+          tri.closePath();
+        }
+
+        return { hat, tri };
+      }
+
+      function resizeTiles() {
+        const dpr = Math.min(devicePixelRatio || 1, 2);
+        tilesW = innerWidth;
+        tilesH = innerHeight;
+        tileCv.width = Math.round(tilesW * dpr);
+        tileCv.height = Math.round(tilesH * dpr);
+        tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const built = buildTilePaths(tilesW, tilesH);
+        hatPath = built.hat;
+        triPath = built.tri;
+      }
+
+      /* Soften the tiles beneath the pitch column. The page already caps its
+         pointer spotlight at 11% to keep --fg-2 body text above 4.5:1, so
+         dropping full-strength tiles behind that same text would undo that.
+         The ramp stays near its maximum across the whole column and only
+         releases near the end, so the text sits on a near-clean field while
+         the tiling still fades in behind the terminal. Only in the
+         two-column layout; stacked, there is nothing to protect. */
+      function maskTiles(w, h) {
+        tctx.globalCompositeOperation = "destination-out";
+        if (w < 960) {
+          // Stacked layout: the pitch column spans the full width, so there is
+          // no side to protect. Fade the field out downwards instead, keeping it
+          // clear behind the stacked text at the top.
+          const edge = h * 0.62;
+          const g = tctx.createLinearGradient(0, 0, 0, edge);
+          g.addColorStop(0, "rgba(0,0,0,0.95)");
+          g.addColorStop(0.85, "rgba(0,0,0,0.9)");
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          tctx.fillStyle = g;
+          tctx.fillRect(0, 0, w, edge);
+        } else {
+          // Two-column layout: protect the pitch column, then release the
+          // field so it reads across the terminal side.
+          const edge = w * 0.5;
+          const g = tctx.createLinearGradient(0, 0, edge, 0);
+          g.addColorStop(0, "rgba(0,0,0,0.97)");
+          g.addColorStop(0.85, "rgba(0,0,0,0.95)");
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          tctx.fillStyle = g;
+          tctx.fillRect(0, 0, edge, h);
+        }
+        tctx.globalCompositeOperation = "source-over";
+      }
+
+      function paintTiles(phase) {
+        const w = tilesW;
+        const h = tilesH;
+        tctx.clearRect(0, 0, w, h);
+        if (!hatPath) return;
+
+        const i = tilesOn ? 1 : 0;
+        const lo = clamp01(phase - TILE_BAND);
+        const hi = clamp01(phase + TILE_BAND);
+
+        const stroke = tctx.createLinearGradient(0, h, w, 0);
+        stroke.addColorStop(lo, `rgba(${tileRGB.hat},${TILE_STROKE_FLOOR * TILE_K})`);
+        stroke.addColorStop(phase, `rgba(${tileRGB.hat},${TILE_STROKE_PEAK[i] * TILE_K})`);
+        stroke.addColorStop(hi, `rgba(${tileRGB.hat},${TILE_STROKE_FLOOR * TILE_K})`);
+
+        const fill = tctx.createLinearGradient(0, h, w, 0);
+        fill.addColorStop(lo, `rgba(${tileRGB.hat},${TILE_FILL_FLOOR * TILE_K})`);
+        fill.addColorStop(phase, `rgba(${tileRGB.hat},${TILE_FILL_PEAK[i] * TILE_K})`);
+        fill.addColorStop(hi, `rgba(${tileRGB.hat},${TILE_FILL_FLOOR * TILE_K})`);
+
+        tctx.fillStyle = fill;
+        tctx.fill(hatPath);
+        tctx.fill(triPath);
+        tctx.strokeStyle = stroke;
+        tctx.lineWidth = 1.4;
+        tctx.stroke(hatPath);
+        tctx.strokeStyle = `rgba(${tileRGB.fg},${(0.05 + i * 0.03) * TILE_K})`;
+        tctx.lineWidth = 0.8;
+        tctx.stroke(triPath);
+
+        maskTiles(w, h);
+      }
+
+      let tilesOn = false;
+      let tilePhase = 0;
+      let tileLast = 0;
+      let tileRAF = 0;
+
+      function setTilesActive(on) {
+        tilesOn = !!on;
+      }
+
+      function tileLoop(now) {
+        const dt = tileLast ? Math.min((now - tileLast) / 1000, 0.1) : 0;
+        tileLast = now;
+        tilePhase = (tilePhase + TILE_SPEED[tilesOn ? 1 : 0] * dt) % 1;
+        paintTiles(tilePhase);
+        tileRAF = requestAnimationFrame(tileLoop);
+      }
+
+      function startTiles() {
+        if (tileRAF) return;
+        tileLast = 0;
+        tileRAF = requestAnimationFrame(tileLoop);
+      }
+
+      function stopTiles() {
+        if (!tileRAF) return;
+        cancelAnimationFrame(tileRAF);
+        tileRAF = 0;
+      }
+
+      tileRGB = {
+        hat: resolveRGB("var(--accent)", "240,144,130"),
+        fg: resolveRGB("var(--fg)", "242,236,224"),
+      };
+      resizeTiles();
+
+      let tileResizePending = 0;
+      addEventListener(
+        "resize",
+        () => {
+          if (tileResizePending) return;
+          tileResizePending = requestAnimationFrame(() => {
+            tileResizePending = 0;
+            resizeTiles();
+            if (calm.matches) paintTiles(0.5);
+          });
+        },
+        { passive: true }
+      );
+
+      if (calm.matches) {
+        // One static frame. No animation loop is ever started.
+        paintTiles(0.5);
+      } else {
+        paintTiles(0);
+        startTiles();
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden) stopTiles();
+          else startTiles();
+        });
+      }
+
       /* ═════════════════════ Pi session demo ═════════════════════ */
       const termBody = document.getElementById("body");
       const term = document.querySelector(".term");
@@ -1112,6 +1408,8 @@
       function setStatus(on) {
         statusEl.dataset.on = String(on);
         statusEl.textContent = on ? "codemode:on" : "codemode:off";
+        // The tile field speeds up and brightens while codemode is on.
+        setTilesActive(on);
       }
 
       async function working(label, ms) {
