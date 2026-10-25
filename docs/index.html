@@ -1068,90 +1068,160 @@
       }
 
       /* ═════════════════════ Einstein tile field ═════════════════════ */
-      /* Aperiodic hat tiling (Katz–Steinhardt). Every unit square is split
-         by a diagonal; a "hat" is two triangles joined across a horizontal
-         cell edge; and no two hats may share a grid vertex. That last rule
-         is what guarantees the pattern never repeats.
+      /* The Spectre (Tile(1,1)): Smith, Myers, Kaplan & Goodman-Strauss, 2023.
+         The first shape proven to force aperiodicity using translations and
+         rotations ALONE — no reflections. That is the real Einstein tile.
 
-         Geometry compiles once per resize into two cached Path2D objects.
-         The wipe is then just a handful of draw calls per frame — no
-         per-tile work, no allocation, nothing rebuilt at 60fps. */
+         Tilings come from a two-rule substitution on nine cluster types:
+         every cluster is replaced by eight smaller ones, mirrored each round
+         (which is why successive generations alternate handedness). Rules
+         ported from the authors' reference implementation.
+
+         Geometry compiles once per resize into cached Path2D objects. The
+         wipe is then just a handful of draw calls per frame — no per-tile
+         work, no allocation, nothing rebuilt at 60fps. */
       const tileCv = document.querySelector(".bg__tiles");
       const tctx = tileCv.getContext("2d");
       const calm = matchMedia("(prefers-reduced-motion: reduce)");
 
-      const TILE_CELL = 64;       // big enough that the hat geometry actually reads
-      const TILE_SEED = 1337;      // fixed: the pattern must not reshuffle on reload
-      const TILE_DENSITY = 0.24;   // hats are the signature; let them dominate
+      const SPECTRE_DEPTH = 4;     // 8^4 tiles, plenty to cover even a 4K viewport
+      const TILE_PX = 46;         // target on-screen width of one Spectre
+      const TILE_SPAN = 3.73;     // its width in the tile's own units
       const TILE_BAND = 0.3;       // wipe half-width, as a fraction of the axis
       // The tiling is legible at rest; the wipe is a highlight travelling over
       // it, not the only source of contrast in the frame.
-      const TILE_STROKE_FLOOR = 0.42;
-      const TILE_STROKE_PEAK = [0.7, 0.88];   // [codemode off, on]
-      const TILE_FILL_FLOOR = 0.045;
-      const TILE_FILL_PEAK = [0.08, 0.13];    // [codemode off, on]
+      const TILE_STROKE_FLOOR = 0.3;
+      const TILE_STROKE_PEAK = [0.6, 0.78];    // [codemode off, on]
+      const TILE_FILL_FLOOR = 0.05;
+      const TILE_FILL_PEAK = [0.1, 0.17];      // [codemode off, on]
       const TILE_SPEED = [0.3, 0.66];        // cycles/sec, [codemode off, on]
 
       // Alpha that reads as "faint texture" on a near-black background reads as
       // several times stronger on near-white. The field is scaled down hard in
       // light mode so the lede and the Reference list keep their contrast.
-      const TILE_K = document.documentElement.dataset.theme === "light" ? 0.3 : 1;
+      const TILE_K = document.documentElement.dataset.theme === "light" ? 0.26 : 1;
 
-      /* Seeded PRNG, so the field is identical on every load and in both
-         themes. Math.random() would make the page move on every reload. */
-      function mulberry32(a) {
-        return function () {
-          a |= 0; a = (a + 0x6d2b79f5) | 0;
-          let t = Math.imul(a ^ (a >>> 15), 1 | a);
-          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      /* ── the Spectre polygon, in units of edge length ── */
+      const SPECTRE = [
+        [0, 0], [1, 0], [1.5, -0.8660254037844386],
+        [2.366025403784439, -0.36602540378443865],
+        [2.366025403784439, 0.6339745962155614],
+        [3.366025403784439, 0.6339745962155614],
+        [3.866025403784439, 1.5], [3, 2], [2.133974596215561, 1.5],
+        [1.6339745962155614, 2.3660254037844393],
+        [0.6339745962155614, 2.3660254037844393],
+        [-0.3660254037844386, 2.3660254037844393],
+        [-0.866025403784439, 1.5], [0, 1],
+      ].map(([x, y]) => ({ x, y }));
+      /* The four marked vertices the substitution aligns clusters on. */
+      const KEYS = [3, 5, 7, 11].map((i) => SPECTRE[i]);
+
+      /* Affine transforms as [a, b, c, d, e, f] acting on (x, y). */
+      const ID = [1, 0, 0, 0, 1, 0];
+      const mul = (A, B) => [
+        A[0] * B[0] + A[1] * B[3], A[0] * B[1] + A[1] * B[4],
+        A[0] * B[2] + A[1] * B[5] + A[2],
+        A[3] * B[0] + A[4] * B[3], A[3] * B[1] + A[4] * B[4],
+        A[3] * B[2] + A[4] * B[5] + A[5],
+      ];
+      const xf = (M, p) => ({ x: M[0] * p.x + M[1] * p.y + M[2], y: M[3] * p.x + M[4] * p.y + M[5] });
+      const rotT = (a) => [Math.cos(a), -Math.sin(a), 0, Math.sin(a), Math.cos(a), 0];
+      const ttrans = (x, y) => [1, 0, x, 0, 1, y];
+
+      /* How the eight children of a cluster are placed: cumulative angle, the
+         key vertex of the previous copy to line up, and the key vertex of the
+         next copy to land on. */
+      const T_RULES = [[60, 3, 1], [0, 2, 0], [60, 3, 1], [60, 3, 1],
+                       [0, 2, 0], [60, 3, 1], [-120, 3, 3]];
+      /* Which sub-cluster occupies each of those eight slots. "null" is a gap. */
+      const SUPER_RULES = {
+        Gamma: ["Pi", "Delta", "null", "Theta", "Sigma", "Xi", "Phi", "Gamma"],
+        Delta: ["Xi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Phi", "Gamma"],
+        Theta: ["Psi", "Delta", "Pi", "Phi", "Sigma", "Pi", "Phi", "Gamma"],
+        Lambda: ["Psi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Phi", "Gamma"],
+        Xi: ["Psi", "Delta", "Pi", "Phi", "Sigma", "Psi", "Phi", "Gamma"],
+        Pi: ["Psi", "Delta", "Xi", "Phi", "Sigma", "Psi", "Phi", "Gamma"],
+        Sigma: ["Xi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Lambda", "Gamma"],
+        Phi: ["Psi", "Delta", "Psi", "Phi", "Sigma", "Pi", "Phi", "Gamma"],
+        Psi: ["Psi", "Delta", "Psi", "Phi", "Sigma", "Psi", "Phi", "Gamma"],
+      };
+
+      function baseSys() {
+        const sys = {};
+        const leaf = () => ({ pts: SPECTRE, quad: KEYS });
+        for (const lab of ["Delta", "Theta", "Lambda", "Xi", "Pi", "Sigma", "Phi", "Psi"]) {
+          sys[lab] = leaf();
+        }
+        /* Gamma is not a single tile but the two-tile Mystic compound: one
+           Spectre plus a copy rotated 30 degrees about the tile's own eighth
+           vertex. It must be a real node, not a placeholder — it occupies one
+           of the eight slots in every cluster, so an empty one silently drops
+           tiles and the patch falls apart a little more each round. */
+        sys.Gamma = {
+          geoms: [
+            { geom: leaf(), xform: ID, mystic: true },
+            {
+              geom: leaf(),
+              xform: mul(ttrans(SPECTRE[8].x, SPECTRE[8].y), rotT(Math.PI / 6)),
+              mystic: true,
+            },
+          ],
+          quad: KEYS,
         };
+        return sys;
       }
 
-      /* Grid vertices packed into one int, for the no-shared-vertex rule. */
-      const vkey = (x, y) => ((y & 1023) << 11) | (x & 2047);
+      /* One substitution round. The mirror R applied to every placement is why
+         successive generations alternate handedness. */
+      function buildSupertiles(sys) {
+        const quad = sys.Delta.quad;
+        const R = [-1, 0, 0, 0, 1, 0];
+        const Ts = [ID];
+        let total = 0;
+        let rot = ID;
+        const tq = [...quad];
 
-      function buildHats(cols, rows, density, seed) {
-        const owner = new Int32Array(cols * rows).fill(-1);
-        const used = new Set();
-        const hats = [];
-        const rnd = mulberry32(seed);
-
-        for (let j = 0; j < rows; j++) {
-          for (let i = 0; i < cols; i++) {
-            if (rnd() > density) continue;
-            const down = rnd() < 0.5;            // which way this hat leans
-            const i2 = down ? (i + 1) % cols : (i - 1 + cols) % cols;
-            const a = j * cols + i;
-            const b = j * cols + i2;
-            if (owner[a] !== -1 || owner[b] !== -1) continue;
-
-            const verts = down
-              ? [vkey(i, j), vkey(i + 1, j + 1), vkey(i + 1, j + 2), vkey(i, j + 1)]
-              : [vkey(i, j - 1), vkey(i + 1, j), vkey(i + 1, j + 1), vkey(i, j)];
-
-            let clash = false;
-            for (const v of verts) {
-              if (used.has(v)) { clash = true; break; }
-            }
-            if (clash) continue;
-            for (const v of verts) used.add(v);
-
-            owner[a] = hats.length;
-            owner[b] = hats.length;
-            hats.push({ i, j, down });
+        for (const [ang, from, to] of T_RULES) {
+          total += ang;
+          if (ang !== 0) {
+            rot = rotT((total * Math.PI) / 180);
+            for (let i = 0; i < 4; i++) tq[i] = xf(rot, quad[i]);
           }
+          const prev = xf(Ts[Ts.length - 1], quad[from]);
+          Ts.push(mul([1, 0, prev.x - tq[to].x, 0, 1, prev.y - tq[to].y], rot));
         }
 
-        // Everything a hat did not claim becomes a plain triangle, split by
-        // the same diagonal, alternating on (i+j) parity.
-        const tris = [];
-        for (let j = 0; j < rows; j++) {
-          for (let i = 0; i < cols; i++) {
-            if (owner[j * cols + i] === -1) tris.push({ i, j, up: ((i + j) & 1) === 0 });
+        for (let i = 0; i < Ts.length; i++) Ts[i] = mul(R, Ts[i]);
+
+        const superQuad = [xf(Ts[6], quad[2]), xf(Ts[5], quad[1]),
+                           xf(Ts[3], quad[2]), xf(Ts[0], quad[1])];
+
+        const out = {};
+        for (const lab in SUPER_RULES) {
+          const geoms = [];
+          const subs = SUPER_RULES[lab];
+          for (let i = 0; i < 8; i++) {
+            if (subs[i] === "null") continue;
+            // Children must be the previous generation's NODES, not labels:
+            // after a round every label denotes another meta, so label refs
+            // would recurse forever.
+            geoms.push({ geom: sys[subs[i]], xform: Ts[i], mystic: subs[i] === "Gamma" });
           }
+          out[lab] = { geoms, quad: superQuad };
         }
-        return { hats, tris };
+        return out;
+      }
+
+      /* Walk the substitution tree down to its leaves, noting which branch each
+         tile came through so the Mystic pairs can be tinted differently. */
+      function flatten(node, T, out, mystic) {
+        if (node.pts) {
+          out.push({ pts: node.pts.map((p) => xf(T, p)), mystic });
+          return;
+        }
+        for (const g of node.geoms) {
+          flatten(g.geom, mul(T, g.xform), out, mystic || g.mystic);
+        }
       }
 
       let hatPath = null;
@@ -1188,36 +1258,50 @@
 
       const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
+      /* The substitution is deterministic, so the field is identical on every
+         load and in both themes — no seed needed. */
       function buildTilePaths(w, h) {
-        // 2 cells of bleed past every edge, so the wrap seam is never visible.
-        const cols = Math.ceil(w / TILE_CELL) + 4;
-        const rows = Math.ceil(h / TILE_CELL) + 4;
-        const ox = -TILE_CELL * 2;
-        const oy = -TILE_CELL * 2;
-        const px = (i) => ox + i * TILE_CELL;
-        const py = (j) => oy + j * TILE_CELL;
-        const { hats, tris } = buildHats(cols, rows, TILE_DENSITY, TILE_SEED);
+        let sys = baseSys();
+        for (let i = 0; i < SPECTRE_DEPTH; i++) sys = buildSupertiles(sys);
 
-        const hat = new Path2D();
-        const tri = new Path2D();
+        const polys = [];
+        flatten(sys.Delta, ID, polys, false);
 
-        for (const t of hats) {
-          const p = t.down
-            ? [[t.i, t.j], [t.i + 1, t.j + 1], [t.i + 1, t.j + 2], [t.i, t.j + 1]]
-            : [[t.i, t.j - 1], [t.i + 1, t.j], [t.i + 1, t.j + 1], [t.i, t.j]];
-          p.forEach(([x, y], k) => (k ? hat.lineTo(px(x), py(y)) : hat.moveTo(px(x), py(y))));
-          hat.closePath();
+        // Fit the hexagonal patch to the viewport. The patch is finite (it is a
+        // substitution tree, not a torus), so scale so it overflows on BOTH axes
+        // and centre it — the viewport never reaches the patch boundary.
+        let minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+        for (const t of polys) {
+          for (const p of t.pts) {
+            if (p.x < minx) minx = p.x;
+            if (p.x > maxx) maxx = p.x;
+            if (p.y < miny) miny = p.y;
+            if (p.y > maxy) maxy = p.y;
+          }
+        }
+        const pw = maxx - minx;
+        const ph = maxy - miny;
+        const scale = Math.max(Math.max(w / pw, h / ph) * 1.14, TILE_PX / TILE_SPAN);
+        const M = [
+          scale, 0, (w - (minx + maxx) * scale) / 2,
+          0, scale, (h - (miny + maxy) * scale) / 2,
+        ];
+
+        // Two groups so the Mystic pairs read differently from lone Spectres,
+        // the way the paper's figures colour them.
+        const plain = new Path2D();
+        const mystic = new Path2D();
+
+        for (const t of polys) {
+          const path = t.mystic ? mystic : plain;
+          t.pts.forEach((p, k) => {
+            const q = xf(M, p);
+            k ? path.lineTo(q.x, q.y) : path.moveTo(q.x, q.y);
+          });
+          path.closePath();
         }
 
-        for (const t of tris) {
-          const p = t.up
-            ? [[t.i, t.j], [t.i + 1, t.j + 1], [t.i, t.j + 1]]
-            : [[t.i, t.j], [t.i + 1, t.j], [t.i + 1, t.j + 1]];
-          p.forEach(([x, y], k) => (k ? tri.lineTo(px(x), py(y)) : tri.moveTo(px(x), py(y))));
-          tri.closePath();
-        }
-
-        return { hat, tri };
+        return { hat: plain, tri: mystic, count: polys.length };
       }
 
       function resizeTiles() {
@@ -1247,8 +1331,8 @@
           // clear behind the stacked text at the top.
           const edge = h * 0.62;
           const g = tctx.createLinearGradient(0, 0, 0, edge);
-          g.addColorStop(0, "rgba(0,0,0,0.95)");
-          g.addColorStop(0.85, "rgba(0,0,0,0.9)");
+          g.addColorStop(0, "rgba(0,0,0,0.98)");
+          g.addColorStop(0.85, "rgba(0,0,0,0.95)");
           g.addColorStop(1, "rgba(0,0,0,0)");
           tctx.fillStyle = g;
           tctx.fillRect(0, 0, w, edge);
@@ -1257,8 +1341,8 @@
           // field so it reads across the terminal side.
           const edge = w * 0.5;
           const g = tctx.createLinearGradient(0, 0, edge, 0);
-          g.addColorStop(0, "rgba(0,0,0,0.97)");
-          g.addColorStop(0.85, "rgba(0,0,0,0.95)");
+          g.addColorStop(0, "rgba(0,0,0,0.99)");
+          g.addColorStop(0.85, "rgba(0,0,0,0.97)");
           g.addColorStop(1, "rgba(0,0,0,0)");
           tctx.fillStyle = g;
           tctx.fillRect(0, 0, edge, h);
@@ -1277,23 +1361,28 @@
         const hi = clamp01(phase + TILE_BAND);
 
         const stroke = tctx.createLinearGradient(0, h, w, 0);
-        stroke.addColorStop(lo, `rgba(${tileRGB.hat},${TILE_STROKE_FLOOR * TILE_K})`);
-        stroke.addColorStop(phase, `rgba(${tileRGB.hat},${TILE_STROKE_PEAK[i] * TILE_K})`);
-        stroke.addColorStop(hi, `rgba(${tileRGB.hat},${TILE_STROKE_FLOOR * TILE_K})`);
+        stroke.addColorStop(lo, `rgba(${tileRGB.fg},${TILE_STROKE_FLOOR * TILE_K})`);
+        stroke.addColorStop(phase, `rgba(${tileRGB.fg},${TILE_STROKE_PEAK[i] * TILE_K})`);
+        stroke.addColorStop(hi, `rgba(${tileRGB.fg},${TILE_STROKE_FLOOR * TILE_K})`);
 
         const fill = tctx.createLinearGradient(0, h, w, 0);
         fill.addColorStop(lo, `rgba(${tileRGB.hat},${TILE_FILL_FLOOR * TILE_K})`);
         fill.addColorStop(phase, `rgba(${tileRGB.hat},${TILE_FILL_PEAK[i] * TILE_K})`);
         fill.addColorStop(hi, `rgba(${tileRGB.hat},${TILE_FILL_FLOOR * TILE_K})`);
 
+        // Lone Spectres: faint body colour, so the field reads as texture.
         tctx.fillStyle = fill;
         tctx.fill(hatPath);
-        tctx.fill(triPath);
         tctx.strokeStyle = stroke;
-        tctx.lineWidth = 1.4;
+        tctx.lineWidth = 1.1;
         tctx.stroke(hatPath);
-        tctx.strokeStyle = `rgba(${tileRGB.fg},${(0.05 + i * 0.03) * TILE_K})`;
-        tctx.lineWidth = 0.8;
+
+        // Mystic pairs: the accent, always legible, never washed away by the
+        // wipe. These are what give the field its visible skeleton.
+        tctx.fillStyle = `rgba(${tileRGB.hat},${(0.05 + i * 0.05) * TILE_K})`;
+        tctx.fill(triPath);
+        tctx.strokeStyle = `rgba(${tileRGB.hat},${(0.5 + i * 0.25) * TILE_K})`;
+        tctx.lineWidth = 1.5;
         tctx.stroke(triPath);
 
         maskTiles(w, h);
