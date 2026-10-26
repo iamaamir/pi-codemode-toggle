@@ -1,9 +1,183 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { CONFIG_DIR_NAME, getAgentDir } from "@earendil-works/pi-coding-agent";
+import lockfile from "proper-lockfile";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const TOOL_NAME = "codemode";
 const STATUS_KEY = "codemode-toggle";
 
 type Action = "toggle" | "on" | "off" | "status";
+
+export type Scope = "project" | "global";
+
+type EditMode = "enable" | "disable";
+
+/** Whether one settings file's content turns the codemode default on. Malformed content counts as "no". */
+export function isCodemodePersisted(file: string | undefined): boolean {
+  const tools = safeParse(file)?.defaultTools;
+  if (!Array.isArray(tools)) return false;
+  return (tools as string[]).includes("codemode") || (tools as string[]).includes("+codemode");
+}
+
+function safeParse(file: string | undefined): Record<string, unknown> | undefined {
+  if (file === undefined || file.trim() === "") return undefined;
+  try {
+    const parsed = JSON.parse(file);
+    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Which settings layers currently persist codemode, project first — mirrors how Pi applies them. */
+export function persistedScopes(
+  project: string | undefined,
+  global: string | undefined,
+): Scope[] {
+  const scopes: Scope[] = [];
+
+  if (isCodemodePersisted(project)) scopes.push("project");
+  if (isCodemodePersisted(global)) scopes.push("global");
+
+  return scopes;
+}
+
+interface LockRelease {
+  (): void;
+}
+
+/**
+ * Read/write access to the two settings layers, using the same files and the
+ * same lock convention Pi's own SettingsManager uses, so concurrent writes
+ * from Pi processes and this extension stay serialized.
+ */
+export class ScopedSettingsStore {
+  private readonly paths: Record<Scope, string>;
+
+  constructor(cwd: string, agentDir: string) {
+    this.paths = {
+      project: join(cwd, CONFIG_DIR_NAME, "settings.json"),
+      global: join(agentDir, "settings.json"),
+    };
+  }
+
+  read(scope: Scope): string | undefined {
+    const path = this.paths[scope];
+    return existsSync(path) ? readFileSync(path, "utf-8") : undefined;
+  }
+
+  persistedScopes(): Scope[] {
+    return persistedScopes(this.read("project"), this.read("global"));
+  }
+
+  persist(scope: Scope, mode: EditMode): void {
+    const path = this.paths[scope];
+    const existed = existsSync(path);
+    let release: LockRelease | undefined;
+
+    try {
+      // A first-ever write must create the layer's directory before the lock,
+      // which targets `<settings path>.lock` next to the file.
+      if (!existed && mode === "enable") {
+        mkdirSync(dirname(path), { recursive: true });
+      }
+
+      if (existed) release = lockfile.lockSync(path, { realpath: false });
+
+      const next = editCodemodeDefault(existed ? this.read(scope) : undefined, mode);
+
+      if (next === undefined) return;
+
+      // The layer became empty: the file must go, so `status` never reports a
+      // key that is no longer there.
+      if (next === null) {
+        if (existed) unlinkSync(path);
+        return;
+      }
+
+      if (release === undefined) release = lockfile.lockSync(path, { realpath: false });
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, next, "utf-8");
+    } finally {
+      release?.();
+    }
+  }
+}
+
+/**
+ * Apply the persisted-codemode change to one settings file's content.
+ *
+ * Pi reads `defaultTools` with `+name`/`-name` modifiers on top of its builtin
+ * default tool set, so "on" means appending `+codemode` and "off" means
+ * removing it (dropping the key entirely once it holds nothing else).
+ *
+ * Returns the next file content; `null` when the layer becomes empty and the
+ * file should stop existing; `undefined` when nothing needs changing at all.
+ * Throws on malformed files — never silently rewrites a file it can't parse.
+ */
+export function editCodemodeDefault(
+  current: string | undefined,
+  mode: EditMode,
+): string | null | undefined {
+  const settings = current === undefined || current.trim() === "" ? undefined : JSON.parse(current) as { defaultTools?: unknown };
+  const next = { ...settings };
+
+  const tools = Array.isArray(settings?.defaultTools)
+    ? [...(settings.defaultTools as string[])]
+    : undefined;
+
+  if (settings?.defaultTools !== undefined && tools === undefined) {
+    throw new Error("defaultTools in this settings file is not a list");
+  }
+
+  if (mode === "enable") {
+    if (tools?.includes("+codemode") ?? false) return undefined;
+    next.defaultTools = [...(tools ?? []), "+codemode"];
+    return JSON.stringify(next, null, 2);
+  }
+
+  if (!tools?.includes("+codemode")) return undefined;
+  const remaining = tools.filter((tool) => tool !== "+codemode");
+  if (remaining.length > 0) next.defaultTools = remaining;
+  else delete next.defaultTools;
+
+  if (JSON.stringify(next) === JSON.stringify({})) return null;
+  return JSON.stringify(next, null, 2);
+}
+
+export type ParsedCommand =
+  | { ok: true; action: Action; scopes: Scope[] }
+  | { ok: false; error: string };
+
+export function parseCommand(args: string): ParsedCommand {
+  const words = args.trim().toLowerCase().split(/\s+/).filter((word) => word.length > 0);
+
+  const unknown = words.find(
+    (word) =>
+      !word.startsWith("-") &&
+      !["toggle", "on", "off", "status"].includes(word),
+  );
+  if (unknown) return { ok: false, error: `Unknown argument: ${unknown}` };
+
+  const scopes: Scope[] = [];
+  for (const word of words) {
+    if (!word.startsWith("-")) continue;
+    if (word === "-l") scopes.push("project");
+    else if (word === "-g") scopes.push("global");
+    else return { ok: false, error: `Unknown flag: ${word}` };
+  }
+
+  const actionWord = words.find((word) => !word.startsWith("-")) ?? "";
+  const action: Action =
+    actionWord === "" ? "toggle" : (actionWord as Action);
+
+  return {
+    ok: true,
+    action,
+    scopes: [...new Set(action === "status" ? [] : scopes)],
+  };
+}
 
 export default function codemodeToggle(pi: ExtensionAPI): void {
   function isAvailable(): boolean {
@@ -44,26 +218,23 @@ export default function codemodeToggle(pi: ExtensionAPI): void {
     // ctx.ui.setWidget(STATUS_KEY, [ctx.ui.theme.fg("success", "[ Codemode ON ]")], { placement: "belowEditor", });
   }
 
-  function notifyStatus(ctx: ExtensionContext): void {
-    ctx.ui.notify(`Codemode is ${isEnabled() ? "enabled" : "disabled"}`, "info");
-  }
-
-  function parseAction(args: string): Action | undefined {
-    const value = args.trim().toLowerCase();
-
-    if (value === "") return "toggle";
-    if (value === "toggle") return "toggle";
-    if (value === "on") return "on";
-    if (value === "off") return "off";
-    if (value === "status") return "status";
-
-    return undefined;
+  function persistedHint(store: ScopedSettingsStore): string {
+    const scopes = store.persistedScopes();
+    if (scopes.length === 0) return "";
+    return ` · persisted for ${scopes.join(", ")}`;
   }
 
   pi.registerCommand("codemode", {
     description: "Toggle Pi's native Codemode tool",
 
     getArgumentCompletions: (prefix) => {
+      if (prefix.startsWith("-")) {
+        const flags = ["-l", "-g", "-l -g"];
+        return flags
+          .filter((flag) => flag.startsWith(prefix))
+          .map((flag) => ({ value: flag, label: flag }));
+      }
+
       const actions = ["on", "off", "status", "toggle"];
 
       const matches = actions
@@ -85,27 +256,57 @@ export default function codemodeToggle(pi: ExtensionAPI): void {
         return;
       }
 
-      const action = parseAction(args);
+      const parsed = parseCommand(args);
 
-      if (!action) {
-        ctx.ui.notify("Usage: /codemode [on|off|status|toggle]", "error");
+      if (!parsed.ok) {
+        ctx.ui.notify(`${parsed.error}. Usage: /codemode [on|off|status|toggle] [-l] [-g]`, "error");
         return;
       }
 
-      if (action === "status") {
-        notifyStatus(ctx);
+      const store = new ScopedSettingsStore(ctx.cwd, getAgentDir());
+
+      if (parsed.action === "status") {
+        const removed = store.persistedScopes();
+        ctx.ui.notify(`Codemode is ${isEnabled() ? "enabled" : "disabled"}`, "info");
+        ctx.ui.notify(
+          `Persisted startup default: ${removed.length > 0 ? removed.join(", ") : "none"}`,
+          "info",
+        );
         updateStatus(ctx);
         return;
       }
 
-      if (action === "toggle") {
+      if (parsed.action === "toggle") {
         setEnabled(!isEnabled());
       } else {
-        setEnabled(action === "on");
+        setEnabled(parsed.action === "on");
+      }
+
+      // Persisting is explicit: a bare toggle never writes anything. The
+      // final (post-toggle) state becomes the startup default.
+      for (const scope of parsed.scopes) {
+        if (scope === "project" && !ctx.isProjectTrusted()) {
+          ctx.ui.notify(
+            "This project is untrusted; refusing to write .pi/settings.json.",
+            "error",
+          );
+          continue;
+        }
+
+        const mode: EditMode = isEnabled() ? "enable" : "disable";
+
+        try {
+          store.persist(scope, mode);
+        } catch (error) {
+          ctx.ui.notify(
+            `Failed to update ${scope === "project" ? "project" : "global"} settings: ${error instanceof Error ? error.message : String(error)}`,
+            "error",
+          );
+        }
       }
 
       updateStatus(ctx);
-      notifyStatus(ctx);
+      ctx.ui.notify(`Codemode is ${isEnabled() ? "enabled" : "disabled"}${persistedHint(store)}`, "info");
     },
   });
 
