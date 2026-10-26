@@ -9,7 +9,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test": "node --test index.test.ts"
   },
   "keywords": [
     "pi-package",
@@ -40,6 +41,11 @@
   },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "^0.99.1",
+    "@types/node": "^26.6.5",
+    "@types/proper-lockfile": "^4.1.4",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "proper-lockfile": "^4.1.2"
   }
 }
