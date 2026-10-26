@@ -69,37 +69,69 @@ test("actions are case-insensitive", () => {
 
 // ── autocomplete hints ───────────────────────────────────────────────────────
 
-test("an empty completion prefix shows actions and flags with hints", () => {
-  const items = completionItems("");
+test("completions are whole commands; an empty prefix shows every form", () => {
   assert.deepEqual(
-    items.map((item) => item.value),
-    ["on", "off", "toggle", "status", "-l", "-g"],
+    completionItems("").map((item) => item.value),
+    ["on", "on -l", "on -g", "off", "off -l", "off -g", "toggle", "status"],
   );
-  for (const item of items) {
+  for (const item of completionItems("")) {
     assert.ok(item.description && item.description.length > 0, `hint for ${item.value}`);
   }
 });
 
-test("typing narrows the completion list", () => {
+test("typing an action narrows to its persisted forms", () => {
   assert.deepEqual(
-    completionItems("o").map((item) => item.value),
-    ["on", "off"],
+    completionItems("on").map((item) => item.value),
+    ["on", "on -l", "on -g"],
   );
   assert.deepEqual(
-    completionItems("-").map((item) => item.value),
-    ["-l", "-g"],
+    completionItems("off").map((item) => item.value),
+    ["off", "off -l", "off -g"],
+  );
+});
+
+test("a trailing space keeps showing that action's forms", () => {
+  assert.deepEqual(
+    completionItems("on ").map((item) => item.value),
+    ["on", "on -l", "on -g"],
+  );
+});
+
+test("typing a flag narrows within the typed action", () => {
+  assert.deepEqual(
+    completionItems("on -").map((item) => item.value),
+    ["on -l", "on -g"],
   );
   assert.deepEqual(
-    completionItems("-g").map((item) => item.value),
-    ["-g"],
+    completionItems("on -g").map((item) => item.value),
+    ["on -g"],
+  );
+});
+
+test("prefix matching is case- and space-insensitive", () => {
+  assert.deepEqual(
+    completionItems("ON  -").map((item) => item.value),
+    ["on -l", "on -g"],
   );
 });
 
 test("flag hints say what they persist and where", () => {
-  const flags = Object.fromEntries(completionItems("").map((item) => [item.value, item.description]));
-  assert.match(flags["-l"]!, /project/);
-  assert.match(flags["-g"]!, /global/);
-  assert.match(flags["-l"]!, /settings\.json/);
+  const hints = Object.fromEntries(completionItems("").map((item) => [item.value, item.description]));
+  assert.match(hints["on -l"]!, /project/);
+  assert.match(hints["on -g"]!, /global/);
+  assert.match(hints["off -l"]!, /project/);
+  assert.match(hints["on -l"]!, /settings\.json/);
+});
+
+test("toggle and status stay discoverable", () => {
+  assert.deepEqual(
+    completionItems("t").map((item) => item.value),
+    ["toggle"],
+  );
+  assert.deepEqual(
+    completionItems("sta").map((item) => item.value),
+    ["status"],
+  );
 });
 
 // ── persisted default editing ────────────────────────────────────────────────

@@ -187,21 +187,27 @@ interface CompletionItem {
 }
 
 /**
- * The completion menu is where users discover that persisting exists: an
- * empty prefix shows every action AND both flags, so `/codemode ` alone
- * already advertises `-l`/`-g` with an explanation of where each writes.
+ * The completion menu is where users discover that persisting exists.
+ *
+ * Pi hands us the whole argument text after `/codemode ` and replaces that
+ * region wholesale when a suggestion is picked, so items are complete
+ * command forms (`on -l`) rather than bare flags — the user sees exactly
+ * what they are about to run.
  */
 export function completionItems(prefix: string): CompletionItem[] {
   const catalog: CompletionItem[] = [
     { value: "on", label: "on", description: "enable codemode for this session" },
+    { value: "on -l", label: "on -l", description: "enable now + persist for this project (.pi/settings.json)" },
+    { value: "on -g", label: "on -g", description: "enable now + persist globally (agent settings.json)" },
     { value: "off", label: "off", description: "disable codemode for this session" },
+    { value: "off -l", label: "off -l", description: "disable now + clear the project's saved default" },
+    { value: "off -g", label: "off -g", description: "disable now + clear the global saved default" },
     { value: "toggle", label: "toggle", description: "flip codemode for this session" },
     { value: "status", label: "status", description: "show codemode state and where it is persisted" },
-    { value: "-l", label: "-l", description: "persist the result for this project (.pi/settings.json)" },
-    { value: "-g", label: "-g", description: "persist the result globally (agent settings.json)" },
   ];
 
-  return catalog.filter((item) => item.value.startsWith(prefix));
+  const needle = prefix.toLowerCase().replace(/\s+/g, " ").trimEnd();
+  return catalog.filter((item) => item.value.startsWith(needle));
 }
 
 export default function codemodeToggle(pi: ExtensionAPI): void {
