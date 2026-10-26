@@ -43,6 +43,32 @@ export function persistedScopes(
   return scopes;
 }
 
+/**
+ * Human-readable description of what codemode persistence means for
+ * future sessions, used by /codemode status output.
+ *
+ * - Empty array            → new sessions won't have codemode on
+ * - One scope            → new sessions in that scope start with codemode on
+ * - Multiple scopes      → new sessions start with codemode on in both
+ *
+ * Always mentions the command to opt in (the flag, not just "persist").
+ */
+export function describePersisted(scopes: Scope[]): string {
+  if (scopes.length === 0) {
+    return "new sessions start without codemode on; use /codemode on -l or /codemode on -g to enable";
+  }
+  if (scopes.length === 1 && scopes[0] === "project") {
+    return `new sessions in this project start with codemode on; use /codemode off -l to clear`;
+  }
+  if (scopes.length === 1 && scopes[0] === "global") {
+    return `all new sessions start with codemode on; use /codemode off -g to clear`;
+  }
+  // both project and global
+  const flagL = "-l";
+  const flagG = "-g";
+  return `new sessions in all projects start with codemode on; use /codemode off ${flagL} or /codemode off ${flagG} to clear`;
+}
+
 interface LockRelease {
   (): void;
 }
@@ -283,7 +309,7 @@ export default function codemodeToggle(pi: ExtensionAPI): void {
         const removed = store.persistedScopes();
         ctx.ui.notify(`Codemode is ${isEnabled() ? "enabled" : "disabled"}`, "info");
         ctx.ui.notify(
-          `Persisted startup default: ${removed.length > 0 ? removed.join(", ") : "none"}`,
+          describePersisted(removed),
           "info",
         );
         updateStatus(ctx);

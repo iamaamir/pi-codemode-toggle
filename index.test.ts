@@ -6,6 +6,7 @@ import { join } from "node:path";
 
 import {
   completionItems,
+  describePersisted,
   editCodemodeDefault,
   isCodemodePersisted,
   parseCommand,
@@ -132,6 +133,27 @@ test("toggle and status stay discoverable", () => {
     completionItems("sta").map((item) => item.value),
     ["status"],
   );
+});
+
+// ── status wording ───────────────────────────────────────────────────────────
+
+test("status with nothing saved says what happens next and how to change it", () => {
+  assert.match(
+    describePersisted([]),
+    /new sessions start without codemode/,
+  );
+  assert.match(describePersisted([]), /on -l/);
+});
+
+test("status describes where codemode will start", () => {
+  assert.match(describePersisted(["project"]), /new sessions in this project start with codemode on/);
+  assert.match(describePersisted(["project"]), /-l/);
+
+  assert.match(describePersisted(["global"]), /all new sessions start with codemode on/);
+  assert.match(describePersisted(["global"]), /-g/);
+
+  assert.match(describePersisted(["project", "global"]), /-l/);
+  assert.match(describePersisted(["project", "global"]), /-g/);
 });
 
 // ── persisted default editing ────────────────────────────────────────────────
