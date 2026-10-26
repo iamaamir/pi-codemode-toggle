@@ -24,17 +24,16 @@ function safeParse(file: string | undefined): Record<string, unknown> | undefine
   if (file === undefined || file.trim() === "") return undefined;
   try {
     const parsed = JSON.parse(file);
-    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) ? parsed : undefined;
+    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+      ? parsed
+      : undefined;
   } catch {
     return undefined;
   }
 }
 
 /** Which settings layers currently persist codemode, project first — mirrors how Pi applies them. */
-export function persistedScopes(
-  project: string | undefined,
-  global: string | undefined,
-): Scope[] {
+export function persistedScopes(project: string | undefined, global: string | undefined): Scope[] {
   const scopes: Scope[] = [];
 
   if (isCodemodePersisted(project)) scopes.push("project");
@@ -55,18 +54,18 @@ export function persistedScopes(
  */
 export function describePersisted(scopes: Scope[]): string {
   if (scopes.length === 0) {
-    return "new sessions start without codemode on; use /codemode on -l or /codemode on -g to enable";
+    return "codemode is off; use /codemode on -l or /codemode on -g to enable";
   }
   if (scopes.length === 1 && scopes[0] === "project") {
-    return `new sessions in this project start with codemode on; use /codemode off -l to clear`;
+    return `codemode is on; use /codemode off -l to clear`;
   }
   if (scopes.length === 1 && scopes[0] === "global") {
-    return `all new sessions start with codemode on; use /codemode off -g to clear`;
+    return `codemode is on globally; use /codemode off -g to clear`;
   }
   // both project and global
   const flagL = "-l";
   const flagG = "-g";
-  return `new sessions in all projects start with codemode on; use /codemode off ${flagL} or /codemode off ${flagG} to clear`;
+  return `codemode is on; use /codemode off ${flagL} or /codemode off ${flagG} to clear`;
 }
 
 interface LockRelease {
@@ -146,7 +145,10 @@ export function editCodemodeDefault(
   current: string | undefined,
   mode: EditMode,
 ): string | null | undefined {
-  const settings = current === undefined || current.trim() === "" ? undefined : JSON.parse(current) as { defaultTools?: unknown };
+  const settings =
+    current === undefined || current.trim() === ""
+      ? undefined
+      : (JSON.parse(current) as { defaultTools?: unknown });
   const next = { ...settings };
 
   const tools = Array.isArray(settings?.defaultTools)
@@ -177,12 +179,14 @@ export type ParsedCommand =
   | { ok: false; error: string };
 
 export function parseCommand(args: string): ParsedCommand {
-  const words = args.trim().toLowerCase().split(/\s+/).filter((word) => word.length > 0);
+  const words = args
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
 
   const unknown = words.find(
-    (word) =>
-      !word.startsWith("-") &&
-      !["toggle", "on", "off", "status"].includes(word),
+    (word) => !word.startsWith("-") && !["toggle", "on", "off", "status"].includes(word),
   );
   if (unknown) return { ok: false, error: `Unknown argument: ${unknown}` };
 
@@ -195,8 +199,7 @@ export function parseCommand(args: string): ParsedCommand {
   }
 
   const actionWord = words.find((word) => !word.startsWith("-")) ?? "";
-  const action: Action =
-    actionWord === "" ? "toggle" : (actionWord as Action);
+  const action: Action = actionWord === "" ? "toggle" : (actionWord as Action);
 
   return {
     ok: true,
@@ -223,13 +226,33 @@ interface CompletionItem {
 export function completionItems(prefix: string): CompletionItem[] {
   const catalog: CompletionItem[] = [
     { value: "on", label: "on", description: "enable codemode for this session" },
-    { value: "on -l", label: "on -l", description: "enable now + persist for this project (.pi/settings.json)" },
-    { value: "on -g", label: "on -g", description: "enable now + persist globally (agent settings.json)" },
+    {
+      value: "on -l",
+      label: "on -l",
+      description: "enable now + persist for this project (.pi/settings.json)",
+    },
+    {
+      value: "on -g",
+      label: "on -g",
+      description: "enable now + persist globally (agent settings.json)",
+    },
     { value: "off", label: "off", description: "disable codemode for this session" },
-    { value: "off -l", label: "off -l", description: "disable now + clear the project's saved default" },
-    { value: "off -g", label: "off -g", description: "disable now + clear the global saved default" },
+    {
+      value: "off -l",
+      label: "off -l",
+      description: "disable now + clear the project's saved default",
+    },
+    {
+      value: "off -g",
+      label: "off -g",
+      description: "disable now + clear the global saved default",
+    },
     { value: "toggle", label: "toggle", description: "flip codemode for this session" },
-    { value: "status", label: "status", description: "show codemode state and where it is persisted" },
+    {
+      value: "status",
+      label: "status",
+      description: "show codemode state and where it is persisted",
+    },
   ];
 
   const needle = prefix.toLowerCase().replace(/\s+/g, " ").trimEnd();
@@ -299,7 +322,10 @@ export default function codemodeToggle(pi: ExtensionAPI): void {
       const parsed = parseCommand(args);
 
       if (!parsed.ok) {
-        ctx.ui.notify(`${parsed.error}. Usage: /codemode [on|off|status|toggle] [-l] [-g]`, "error");
+        ctx.ui.notify(
+          `${parsed.error}. Usage: /codemode [on|off|status|toggle] [-l] [-g]`,
+          "error",
+        );
         return;
       }
 
@@ -308,10 +334,7 @@ export default function codemodeToggle(pi: ExtensionAPI): void {
       if (parsed.action === "status") {
         const removed = store.persistedScopes();
         ctx.ui.notify(`Codemode is ${isEnabled() ? "enabled" : "disabled"}`, "info");
-        ctx.ui.notify(
-          describePersisted(removed),
-          "info",
-        );
+        ctx.ui.notify(describePersisted(removed), "info");
         updateStatus(ctx);
         return;
       }
@@ -326,10 +349,7 @@ export default function codemodeToggle(pi: ExtensionAPI): void {
       // final (post-toggle) state becomes the startup default.
       for (const scope of parsed.scopes) {
         if (scope === "project" && !ctx.isProjectTrusted()) {
-          ctx.ui.notify(
-            "This project is untrusted; refusing to write .pi/settings.json.",
-            "error",
-          );
+          ctx.ui.notify("This project is untrusted; refusing to write .pi/settings.json.", "error");
           continue;
         }
 
@@ -346,7 +366,10 @@ export default function codemodeToggle(pi: ExtensionAPI): void {
       }
 
       updateStatus(ctx);
-      ctx.ui.notify(`Codemode is ${isEnabled() ? "enabled" : "disabled"}${persistedHint(store)}`, "info");
+      ctx.ui.notify(
+        `Codemode is ${isEnabled() ? "enabled" : "disabled"}${persistedHint(store)}`,
+        "info",
+      );
     },
   });
 
