@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  completionItems,
   editCodemodeDefault,
   isCodemodePersisted,
   parseCommand,
@@ -64,6 +65,41 @@ test("unknown flag is an error", () => {
 
 test("actions are case-insensitive", () => {
   assert.deepEqual(parseCommand("ON -L"), { ok: true, action: "on", scopes: ["project"] });
+});
+
+// ── autocomplete hints ───────────────────────────────────────────────────────
+
+test("an empty completion prefix shows actions and flags with hints", () => {
+  const items = completionItems("");
+  assert.deepEqual(
+    items.map((item) => item.value),
+    ["on", "off", "toggle", "status", "-l", "-g"],
+  );
+  for (const item of items) {
+    assert.ok(item.description && item.description.length > 0, `hint for ${item.value}`);
+  }
+});
+
+test("typing narrows the completion list", () => {
+  assert.deepEqual(
+    completionItems("o").map((item) => item.value),
+    ["on", "off"],
+  );
+  assert.deepEqual(
+    completionItems("-").map((item) => item.value),
+    ["-l", "-g"],
+  );
+  assert.deepEqual(
+    completionItems("-g").map((item) => item.value),
+    ["-g"],
+  );
+});
+
+test("flag hints say what they persist and where", () => {
+  const flags = Object.fromEntries(completionItems("").map((item) => [item.value, item.description]));
+  assert.match(flags["-l"]!, /project/);
+  assert.match(flags["-g"]!, /global/);
+  assert.match(flags["-l"]!, /settings\.json/);
 });
 
 // ── persisted default editing ────────────────────────────────────────────────

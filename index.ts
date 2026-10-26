@@ -179,6 +179,31 @@ export function parseCommand(args: string): ParsedCommand {
   };
 }
 
+/** Structurally compatible with Pi's AutocompleteItem, without importing pi-tui. */
+interface CompletionItem {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+/**
+ * The completion menu is where users discover that persisting exists: an
+ * empty prefix shows every action AND both flags, so `/codemode ` alone
+ * already advertises `-l`/`-g` with an explanation of where each writes.
+ */
+export function completionItems(prefix: string): CompletionItem[] {
+  const catalog: CompletionItem[] = [
+    { value: "on", label: "on", description: "enable codemode for this session" },
+    { value: "off", label: "off", description: "disable codemode for this session" },
+    { value: "toggle", label: "toggle", description: "flip codemode for this session" },
+    { value: "status", label: "status", description: "show codemode state and where it is persisted" },
+    { value: "-l", label: "-l", description: "persist the result for this project (.pi/settings.json)" },
+    { value: "-g", label: "-g", description: "persist the result globally (agent settings.json)" },
+  ];
+
+  return catalog.filter((item) => item.value.startsWith(prefix));
+}
+
 export default function codemodeToggle(pi: ExtensionAPI): void {
   function isAvailable(): boolean {
     return pi.getAllTools().some((tool) => tool.name === TOOL_NAME);
@@ -225,27 +250,10 @@ export default function codemodeToggle(pi: ExtensionAPI): void {
   }
 
   pi.registerCommand("codemode", {
-    description: "Toggle Pi's native Codemode tool",
+    description:
+      "Toggle Pi's native Codemode tool · add -l (this project) or -g (all projects) to persist it",
 
-    getArgumentCompletions: (prefix) => {
-      if (prefix.startsWith("-")) {
-        const flags = ["-l", "-g", "-l -g"];
-        return flags
-          .filter((flag) => flag.startsWith(prefix))
-          .map((flag) => ({ value: flag, label: flag }));
-      }
-
-      const actions = ["on", "off", "status", "toggle"];
-
-      const matches = actions
-        .filter((action) => action.startsWith(prefix.toLowerCase()))
-        .map((action) => ({
-          value: action,
-          label: action,
-        }));
-
-      return matches.length > 0 ? matches : null;
-    },
+    getArgumentCompletions: (prefix) => completionItems(prefix),
 
     handler: async (args, ctx) => {
       if (!isAvailable()) {
