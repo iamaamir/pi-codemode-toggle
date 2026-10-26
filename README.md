@@ -1,12 +1,12 @@
 # pi-codemode-toggle
 
-A tiny Pi extension to toggle Pi's native `codemode` tool at runtime without editing settings or restarting Pi.
+A tiny Pi extension to toggle Pi's native `codemode` tool at runtime
 
 ```bash
 pi install npm:pi-codemode-toggle
 ```
 
-```text
+```bash
 /codemode              # toggle (this session only, nothing is saved)
 /codemode on
 /codemode off
@@ -20,7 +20,7 @@ startup, which keeps things minimal by default. If you want your choice to
 survive new sessions, persist it explicitly with `-l` (local to project) or `-g`
 (all projects):
 
-```text
+```bash
 /codemode on -l        # enable now + persist for this project   (.pi/settings.json)
 /codemode off -l       # disable now + clear the project's saved default
 /codemode on -g        # enable now + persist globally            (agent settings.json)
