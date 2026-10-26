@@ -138,20 +138,26 @@ test("toggle and status stay discoverable", () => {
 // ── status wording ───────────────────────────────────────────────────────────
 
 test("status with nothing saved says what happens next and how to change it", () => {
+  // describePersisted([]) → "codemode is off; use /codemode on -l or /codemode on -g to enable"
   assert.match(
     describePersisted([]),
-    /new sessions start without codemode/,
+    /codemode is off/,
   );
   assert.match(describePersisted([]), /on -l/);
+  assert.match(describePersisted([]), /on -g/);
 });
 
 test("status describes where codemode will start", () => {
-  assert.match(describePersisted(["project"]), /new sessions in this project start with codemode on/);
+  // describePersisted(["project"]) → "codemode is on; use /codemode off -l to clear"
+  assert.match(describePersisted(["project"]), /codemode is on/);
   assert.match(describePersisted(["project"]), /-l/);
 
-  assert.match(describePersisted(["global"]), /all new sessions start with codemode on/);
+  // describePersisted(["global"]) → "codemode is on globally; use /codemode off -g to clear"
+  assert.match(describePersisted(["global"]), /codemode is on globally/);
   assert.match(describePersisted(["global"]), /-g/);
 
+  // describePersisted(["project", "global"]) → "codemode is on; use /codemode off -l or /codemode off -g to clear"
+  assert.match(describePersisted(["project", "global"]), /codemode is on/);
   assert.match(describePersisted(["project", "global"]), /-l/);
   assert.match(describePersisted(["project", "global"]), /-g/);
 });
